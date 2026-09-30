@@ -49,6 +49,16 @@ class Lexer:
                 self._advance()
             return
         
+        if char in ('"', '“', '”'):
+            if char in ('“', '”'):
+                raise LexerError(
+                    "Has usado comillas tipográficas curvas (“ o ”). "
+                    "Usa únicamente las comillas rectas de programación (\").", 
+                    self.line, self.start_column
+                )
+            self._string()
+            return
+        
         # delimitadores y operadores simples
         if char == '(':
             self._add_token(TokenType.LPAREN)
@@ -92,9 +102,8 @@ class Lexer:
                 self._add_token(TokenType.GREATER)
 
         # Literales de texto ("...")
-        elif char == '"':
-            self._string()
-
+        
+        
         # Literales numericos
         elif char.isdigit():
             self._number()
@@ -133,16 +142,18 @@ class Lexer:
 
     # literales complejos
     def _string(self) -> None:
-        value_chars=[]
-        while self._peek() != '*' and not self._is_at_end():
+        value_chars = []
+        while self._peek() != '"' and not self._is_at_end():
             if self._peek() == '\n':
-                raise LexerError("Cadena de texto sin cerrar antes del fin de linea", self.line, self.start_column)
+                raise LexerError("Cadena de texto sin cerrar antes del fin de línea", self.line, self.start_column)
+            if self._peek() in ('“', '”'):
+                raise LexerError("Detectada comilla curva dentro del texto. Usa comillas rectas (\").", self.line, self.column)  
             value_chars.append(self._advance())
 
         if self._is_at_end():
             raise LexerError("Cadena de texto sin cerrar al final del archivo", self.line, self.start_column)
 
-        self._advance() # Consumir la commila de cierre
+        self._advance()  # Consumir la comilla de cierre '"'
         self._add_token(TokenType.STRING, "".join(value_chars))
 
     def _number(self)-> None:
