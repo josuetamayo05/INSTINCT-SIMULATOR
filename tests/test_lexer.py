@@ -1,5 +1,5 @@
-from language.lexer import Lexer
-from language.tokens import TokenType
+from src.language.lexer import Lexer
+from src.language.tokens import TokenType
 # Ejemplo de criatura uruk.ins del enunciado
 sample_code = """# uruk.ins
 creature Uruk

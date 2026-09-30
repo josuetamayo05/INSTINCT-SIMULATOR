@@ -47,7 +47,78 @@ class Parser:
 
             key_token=self._advance() # Consumimos el identificador ej, 'creature', 'health')
 
+            if key_token!=TokenType.IDENTIFIER:
+                raise CompileError(
+                    f"Se esperaba una clave de cabecera (creature, faction, health, vision, lifespan), "
+                    f"pero se encontró: '{key_token.value}'",
+                    key_token.line
+                )
 
+            key=key_token.value
+
+            if key not in REQUIRED_HEADER_KEYS:
+                raise CompileError(
+                    f"Clave de cabecera desconocida: '{key}'. "
+                    f"Se esperaba una de: {REQUIRED_HEADER_KEYS}",
+                    key_token.line
+                )
+
+            if key in seen_keys:
+                raise CompileError(
+                    f"La clave de cabecera '{key}' está declarada más de una vez",
+                    key_token.line
+                )
+            seen_keys.add(key)
+            self._parse_header_value(key, key_token.line)
+            self._consume_newline(f"Se esperaba salto de línea tras la declaración de {key}")
+            self._skip_newlines()
+
+        # Al terminar, comprobar que se hayan leido las 5 claves
+        missing=REQUIRED_HEADER_KEYS - seen_keys
+        if missing:
+            raise CompileError(
+                f"Faltan claves de cabecera: {missing}",
+                self._peek().line
+            )
+
+    def _parse_header_value(self,key:str,line:int)->None:
+        """Lee el valor asociado a una clave cabecera y valida su tipo"""
+        value_token=self._advance()
+
+        # creature y faction esperan un nombre (identificador)
+        if key in ("creature", "faction"):
+            if value_token.type!=TokenType.IDENTIFIER:
+                raise CompileError(
+                    f"'{key}' requiere un nombre (identificador), no '{value_token.value}'",
+                    line
+                )
+            if key=="creature":
+                self.program.creature_name = value_token.value
+            else:
+                self.program.faction=value_token.value
+
+        elif key in ("health","vision","lifespan"):
+            if value_token.type != TokenType.NUMBER:
+                raise CompileError(
+                    f"'{key}' requiere un número entero, no '{value_token.value}'",
+                    line
+                )
+            num=value_token.value
+
+            if key=="health" and num <= 0:
+                raise CompileError("'health' debe ser mayor que 0",line)
+            if key=="vision" and num<1:
+                raise CompileError("'vision' debe ser mayor o igual que 1",line)
+            if key=="lifespan" and num<=0:
+                raise CompileError("'lifespan' debe ser mayor que 0",line)
+
+            if key=="health":
+                self.program.health=num
+            elif key == "vision":
+                self.program.vision = num
+            else:
+                self.program.lifespan=num
+                            
 
     # UTILIDADES DE NAVEGACION DE TOKENS
 
