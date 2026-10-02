@@ -1,5 +1,5 @@
-from src.language.lexer import Lexer
-from src.language.parser import Parser
+from language.lexer import Lexer
+from language.parser import Parser
 
 sample_code="""# uruk.ins
 creature Uruk
@@ -61,4 +61,4 @@ if __name__ == "__main__":
     test_header_missing_key()
     test_header_wrong_first_line()
 
-    
+

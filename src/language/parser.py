@@ -1,7 +1,7 @@
 from typing import List,Optional
-from src.language.tokens import TokenType, Token
-from src.language.ast_nodes import CompiledProgram
-from src.language.errors import CompileError
+from .tokens import TokenType, Token
+from .ast_nodes import CompiledProgram
+from .errors import CompileError
 
 # Las 5 claves de la cabecera obligatorias
 REQUIRED_HEADER_KEYS = {"creature","faction","health","vision","lifespan"}
@@ -16,10 +16,10 @@ class Parser:
         self.current=0
         self.program=CompiledProgram()
 
-    #Punto de entrada
+    # Punto de entrada
     def parse(self) -> CompiledProgram:
         """Compila el archivo entero y devuelve un CompileProgram listo"""
-        self._skip_newlines()
+        #self._skip_newlines()
         self._parse_header()
 
         return self.program
@@ -33,8 +33,8 @@ class Parser:
         """
         seen_keys=set()
 
-        # Verificar que la Primera linea no vacia sea 'creature Name'
-        if not self._chech_identifier("creature"):
+        #Verificar que la Primera linea no vacia sea 'creature Name'
+        if not self._check_identifier("creature"):
             raise CompileError(
                 "La primera línea del archivo debe ser 'creature NombreEspecie'",
                 self._peek().line
@@ -47,7 +47,7 @@ class Parser:
 
             key_token=self._advance() # Consumimos el identificador ej, 'creature', 'health')
 
-            if key_token!=TokenType.IDENTIFIER:
+            if key_token.type!=TokenType.IDENTIFIER:
                 raise CompileError(
                     f"Se esperaba una clave de cabecera (creature, faction, health, vision, lifespan), "
                     f"pero se encontró: '{key_token.value}'",
@@ -127,8 +127,9 @@ class Parser:
         pos=self.current+offset
         if pos>=len(self.tokens):
             return self.tokens[-1] # EOF
-        return self.tokens[pos]
-
+        cur= self.tokens[pos]
+        return cur
+    
     def _advance(self)->Token:
         """Consume el token actual y avanza al siguiente"""
         token=self.tokens[self.current]
@@ -140,16 +141,16 @@ class Parser:
         return self._peek().type==TokenType.EOF
 
     def _check(self,token_type:TokenType)->bool:
-        return self._peek().type==TokenType
+        return self._peek().type == token_type
 
-    def _chech_identifier(self,name:str)->bool:
+    def _check_identifier(self,name:str)->bool:
         """Comprueba si el token actual es un IDENTIFIER con ese nombre exacto."""
         return self._check(TokenType.IDENTIFIER) and self._peek().value == name
 
     def _is_start_label(self)->bool:
         """detecta el patron 'start' ':' para saber que empieza el cuerpo"""
         return (
-            self._chech_identifier("start") and self._peek(1).type==TokenType.COLON
+            self._check_identifier("start") and self._peek(1).type==TokenType.COLON
         )
 
     def _skip_newlines(self) -> None:
