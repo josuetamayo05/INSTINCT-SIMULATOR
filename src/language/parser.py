@@ -1,13 +1,14 @@
 from typing import List,Optional
 from .tokens import TokenType, Token
-from .ast_nodes import CompiledProgram
+from .ast_nodes import CompiledProgram,Expression,LiteralInt,LiteralString,VariableRef,UnaryOp,BinaryOp,FunctionCall
 from .errors import CompileError
 
 # Las 5 claves de la cabecera obligatorias
 REQUIRED_HEADER_KEYS = {"creature","faction","health","vision","lifespan"}
 
 class Parser:
-    """Toma una lista de tokens generada por el lexer y construye un CompileProgram.
+    """
+    Toma una lista de tokens generada por el lexer y construye un CompileProgram.
     Implementa un analisis por descenso recursivo
     """
 
@@ -19,9 +20,9 @@ class Parser:
     # Punto de entrada
     def parse(self) -> CompiledProgram:
         """Compila el archivo entero y devuelve un CompileProgram listo"""
-        #self._skip_newlines()
+        self._skip_newlines()
         self._parse_header()
-
+        
         return self.program
 
     # Punto de entrada
@@ -33,7 +34,7 @@ class Parser:
         """
         seen_keys=set()
 
-        #Verificar que la Primera linea no vacia sea 'creature Name'
+        # Verificar que la Primera linea no vacia sea 'creature Name'
         if not self._check_identifier("creature"):
             raise CompileError(
                 "La primera línea del archivo debe ser 'creature NombreEspecie'",
@@ -118,7 +119,144 @@ class Parser:
                 self.program.vision = num
             else:
                 self.program.lifespan=num
-                            
+
+    # Expresiones (tanda 2 Precedencia de menor a mayor)
+    def parse_expression(self)-> Expression:
+        """Punto de entrada para parsear cualquier expresion """
+        return self._parse_or()
+
+    def _parse_or(self)-> Expression:
+        """Nivel 7: Operador logico 'or'"""
+        expr=self._parse_and()
+
+        while self._match(TokenType.OR):
+            right= self._parse_and()
+            expr= BinaryOp("or",expr,right)
+
+        return expr
+
+    def _parse_and(self)-> Expression:
+        """Nivel 6: Operador logico 'and'"""
+        expr=self._parse_comparison()
+
+        while self._match(TokenType.AND):
+            right= self._parse_comparison()
+            expr= BinaryOp("and", expr,right)
+
+        return expr
+
+    def _parse_comparison(self)-> Expression:
+        """Nivel 5: Comparaciones (<,<=,>,>=,==,!=)"""
+        expr= self._parse_additive()
+
+        while self._peek().type in (
+            TokenType.LESS,
+            TokenType.LESS_EQUAL,
+            TokenType.GREATER,
+            TokenType.GREATER_EQUAL,
+            TokenType.EQUAL_EQUAL,
+            TokenType.BANG_EQUAL,
+        ):
+            op_token= self._advance()
+            op_symbols= {
+                TokenType.LESS: "<",
+                TokenType.LESS_EQUAL: "<=",
+                TokenType.GREATER: ">",
+                TokenType.GREATER_EQUAL: ">=",
+                TokenType.EQUAL_EQUAL: "==",
+                TokenType.BANG_EQUAL: "!=",
+            } 
+            right= self._parse_additive()
+            expr=BinaryOp(op_symbols[op_token.type],expr,right)
+
+        return expr
+
+    def _parse_additive(self)-> Expression:
+        """Nivel 4: Suma (+) y Resta (-)"""
+        expr=self._parse_multiplicative()
+
+        while self._peek().type in (TokenType.PLUS,TokenType.MINUS):
+            op_token=self._advance()
+            op="+" if op_token.type == TokenType.PLUS else "-"
+            right=self._parse_multiplicative()
+            expr=BinaryOp(op,expr,right)
+
+        return expr
+
+    def _parse_multiplicative(self)-> Expression:
+        """Nivel 3: Multiplicacion (*), Division entera (/), Modulo (%)"""
+        expr=self._parse_unary()
+
+        while self._peek().type in (TokenType.STAR, TokenType.SLASH,TokenType.PERCENT):
+            op_token=self._advance()
+            op_map={
+                TokenType.STAR: "*",
+                TokenType.SLASH: "/",
+                TokenType.PERCENT: "%",
+            }
+            right=self._parse_unary()
+            expr= BinaryOp(op_map[op_token.type],expr,right)
+
+        return expr
+
+    def _parse_unary(self)-> Expression:
+        """Nivel 2: Menos unario (-) y Operador 'not'"""
+        if self._peek().type in (TokenType.MINUS, TokenType.NOT):
+            op_token=self._advance()
+            op="-" if op_token.type == TokenType.MINUS else "not"
+            operand = self._parse_unary() # Permite encadenar: --5 o not x
+            return UnaryOp(op,operand)
+
+        return self._parse_primary()
+
+    def _parse_primary(self)-> Expression:
+        """Nivel 1: Literales, variables, llamads a a funciones y parentesis"""
+        token=self._peek()
+
+        # 1. Literales Numericos
+        if self._match(TokenType.NUMBER):
+            return LiteralInt(token.value)
+
+        # Literales texto
+        if self._match(TokenType.STRING):
+            return LiteralString(token.value)
+
+        # Identificadores Variables,Percepciones,Constantes o Llamadas a Funciones
+        if self._match(TokenType.IDENTIFIER):
+            name=token.value
+            # Si le sigue un parentesis '(', es una llamada a funcion ej see(x,y)
+            if self._match(TokenType.LPAREN):
+                args=self._parse_argument_list()
+                self._consume(TokenType.RPAREN,f"Se esperaba ')' tras los argumentos de la funcion '{name}'")
+                return FunctionCall(name,args)
+            # si no, es una variable, percepcion o constante
+            return VariableRef(name)
+    
+        # 4. Parentesis agrupadores: (expresion)
+        if self._match(TokenType.LPAREN):
+            expr = self.parse_expression()
+            self._consume(TokenType.RPAREN, "Se esperaba ')' para cerrar la expresión")
+            return expr
+
+        raise CompileError(
+            f"Expresión no válida o inesperada: '{token.value if token.value is not None else token.type.name}'",
+            token.line
+        )
+
+    def _parse_argument_list(self)-> List[Expression]:
+        """Lee una lista de expresiones separadas por comas """
+        args:List[Expression] = []
+
+        # Caso: Llamada sin argumentos ()
+        if self._match(TokenType.RPAREN):
+            return args 
+
+        
+        args.append(self.parse_expression())
+        while self._match(TokenType.COMMA):
+            args.append(self.parse_expression())
+
+        return args
 
     # UTILIDADES DE NAVEGACION DE TOKENS
 
@@ -153,6 +291,12 @@ class Parser:
             self._check_identifier("start") and self._peek(1).type==TokenType.COLON
         )
 
+    def _consume(self,token_type:TokenType,error_msg:str)-> Token:
+        """Consume el token actual si coincide con el tipo. Si no, lanza CompileError."""
+        if self._check(token_type):
+            return self._advance()
+        raise CompileError(error_msg,self._peek().line)
+
     def _skip_newlines(self) -> None:
         """salta todos los salos de linea consecutivos (lineas en blanco)"""
         while self._check(TokenType.NEWLINE):
@@ -164,3 +308,10 @@ class Parser:
             raise CompileError(error_msg,self._peek().line)
         if self._check(TokenType.NEWLINE):
             self._advance()
+
+    def _match(self,token_type:TokenType)->bool:
+        """Si el token actual coincide con el tipo, lo consume y devuelve True; si no, False"""
+        if self._check(token_type):
+            self._advance()
+            return True
+        return False

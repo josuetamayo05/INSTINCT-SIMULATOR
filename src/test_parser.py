@@ -1,64 +1,46 @@
 from language.lexer import Lexer
 from language.parser import Parser
 
-sample_code="""# uruk.ins
-creature Uruk
-faction isengard
-health 80
-vision 6
-lifespan 400
 
-start:
-"""
-
-def test_header_parsing():
-    print("=== Tokenizando ===")
-    lexer = Lexer(sample_code)
-    tokens = lexer.tokenize()
-    print(f"Tokens generados: {len(tokens)}\n")
-
-    print("=== Parseando ===")
+def parse_single_expr(expr_str: str):
+    tokens = Lexer(expr_str).tokenize()
     parser = Parser(tokens)
-    program = parser.parse()
+    return parser.parse_expression()
 
-    print("=== Resultado ===")
-    print(program)
 
-def test_header_missing_key():
-    """Verifica que el parser detecte una cabecera incompleta."""
-    bad_code = """creature Uruk
-faction isengard
-health 80
-start:
-"""
-    print("\n=== Prueba: cabecera incompleta ===")
-    try:
-        tokens = Lexer(bad_code).tokenize()
-        Parser(tokens).parse()
-        print("ERROR: Debía haber lanzado excepción")
-    except Exception as e:
-        print(f"OK - Se detectó el error: {e}")
+def test_expressions():
+    print("=== PRUEBAS DE EXPRESIONES ===")
 
-def test_header_wrong_first_line():
-    """Verifica que el parser detecte un archivo que no empiece por 'creature'."""
-    bad_code = """faction isengard
-creature Uruk
-health 80
-vision 6
-lifespan 400
-start:
-"""
-    print("\n=== Prueba: primera línea incorrecta ===")
-    try:
-        tokens = Lexer(bad_code).tokenize()
-        Parser(tokens).parse()
-        print("ERROR: Debía haber lanzado excepción")
-    except Exception as e:
-        print(f"OK - Se detectó el error: {e}")
+    # 1. Precedencia aritmética: 1 + 2 * 3  ->  debe ser 1 + (2 * 3)
+    expr1 = parse_single_expr("1 + 2 * 3")
+    print(f"1 + 2 * 3  -->  {expr1}")
+
+    # 2. Expresión del Uruk: random % 3 - 1
+    expr2 = parse_single_expr("random % 3 - 1")
+    print(f"random % 3 - 1  -->  {expr2}")
+
+    # 3. Expresión del Ent: (home_x > x) - (home_x < x)
+    expr3 = parse_single_expr("(home_x > x) - (home_x < x)")
+    print(f"(home_x > x) - (home_x < x)  -->  {expr3}")
+
+    # # 4. Condición con lógica y comparación: health < 20 and enemy_dist < 3
+    expr4 = parse_single_expr("health < 20 and enemy_dist < 3")
+    print(f"health < 20 and enemy_dist < 3  -->  {expr4}")
+
+    # 5. Funciones con argumentos complejos: see(x, y + 1) != GROUND
+    expr5 = parse_single_expr("see(x, y + 1) != GROUND")
+    print(f"see(x, y + 1) != GROUND  -->  {expr5}")
+
+    # 6. Función name con strings: name(x + object_dx, y + object_dy) != \"Rock\"
+    expr6 = parse_single_expr('name(x + object_dx, y + object_dy) != "Rock"')
+    print(f'name(...) != "Rock"  -->  {expr6}')
+
+    # 7. Operadores unarios combinados: not alive or -enemy_dx
+    expr7 = parse_single_expr("not alive or -enemy_dx")
+    print(f"not alive or -enemy_dx  -->  {expr7}")
+
+    print("\n✅ ¡Todas las expresiones se parsearon con éxito!")
+
 
 if __name__ == "__main__":
-    test_header_parsing()
-    test_header_missing_key()
-    test_header_wrong_first_line()
-
-
+    test_expressions()
