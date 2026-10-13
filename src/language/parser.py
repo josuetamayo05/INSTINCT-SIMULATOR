@@ -1,10 +1,31 @@
-from typing import List,Optional
-from .tokens import TokenType, Token
-from .ast_nodes import CompiledProgram,Expression,LiteralInt,LiteralString,VariableRef,UnaryOp,BinaryOp,FunctionCall
-from .errors import CompileError
+from typing import List, Dict, Set, Optional
+from src.language.tokens import Token, TokenType
+from src.language.ast_nodes import (
+    CompiledProgram,
+    Instruction,
+    LabelInst,
+    GotoInst,
+    ConditionalGotoInst,
+    AssignmentInst,
+    ActionInst,
+    Expression,
+    LiteralInt,
+    LiteralString,
+    VariableRef,
+    UnaryOp,
+    BinaryOp,
+    FunctionCall,
+)
+from src.language.errors import CompileError
+from src.language.constants import (
+    READONLY_PERCEPTIONS,
+    WORLD_CONSTANTS,
+    BUILTIN_ACTIONS,
+    BUILTIN_FUNCTIONS,
+)
 
-# Las 5 claves de la cabecera obligatorias
-REQUIRED_HEADER_KEYS = {"creature","faction","health","vision","lifespan"}
+REQUIRED_HEADER_KEYS = {"creature", "faction", "health", "vision", "lifespan"}
+
 
 class Parser:
     """
@@ -120,6 +141,83 @@ class Parser:
             else:
                 self.program.lifespan=num
 
+    # 2 CUERPO DE INSTRUCCIONES
+    def _parse_body(self)->None:
+        """Parsea todas las lineas a partir de start: hasta el EOF"""
+        if not self._is_start_label:
+            raise CompileError("El cuerpo debe comenzar con la etiqueta 'start'",self._peek().line)
+
+        while not self._is_at_end():
+            self._skip_newlines()
+            if self._is_at_end():
+                break
+
+            inst=self._parse_intruction_line()
+            if inst is not None:
+                self.program.instructions.append(inst)
+
+            # Consumir el salto de linea al final de la instruccion
+            if not self._is_at_end():
+                self._consume_newline("Se esperaba salto de línea tras la instrucción")
+
+    def _parse_instruction_line(self) -> Optional[Instruction]:
+        token=self._peek()
+        line=token.line
+
+        # 1. Salto condicional: if <expr> goto <label>
+        if self._match(TokenType.IF):
+            condition=self.parse_expression()
+            self._consume(TokenType.GOTO,"Se esperaba 'goto' tras la condición")
+            label_token=self._consume(TokenType.IDENTIFIER,"Se esperaba una etiqueta tras 'goto'")
+            return ConditionalGotoInst(condition,label_token.value,line)
+
+        # 2. Salto incondicional: goto <label>
+        if self._match(TokenType.GOTO):
+            label_token=self._consume(TokenType.IDENTIFIER,"Se esperaba una etiqueta tras 'goto'")
+            return GotoInst(label_token.value,line) 
+
+        # Si empieza con IDENTIFIER, puede ser Etiqueta, Asignacion o Accion
+        if self._check(TokenType.IDENTIFIER):
+            name_token=self._advance()
+            name=name_token.value
+
+            # Caso 3: Etiqueta (name:)
+            if self._match(TokenType.COLON):
+                if name in self.program.labels:
+                    raise CompileError(f"Etiqueta duplicada: '{name}'", line)
+                 # la etiqueta apunta al indice de la instruccion actual de la lista
+                self.program.labels[name]=len(self.program.instructions)
+                return LabelInst(name, line)
+
+            # Caso 4: Asignacion (name = <expr>)
+            if self._match(TokenType.ASSIGN):
+                if name in READONLY_PERCEPTIONS:
+                    raise CompileError(f"No se puede asignar a la percepción de solo lectura: '{name}'", line)
+                if name in WORLD_CONSTANTS:
+                    raise CompileError(f"No se puede asignar un valor a la constante '{name}'",line)
+
+                value_expr = self.parse_expression()
+                return AssignmentInst(name,value_expr,line)
+
+            # Caso 5: Accion (name(arg1,arg2,...))
+            if self._match(TokenType.LPAREN):
+                if name not in BUILTIN_ACTIONS:
+                    raise CompileError(f"Accion desconocida: '{name}'",line)
+
+                args=self._parse_argument_list()
+                self._consume(TokenType.RPAREN,f"Se esperaba ')' tras los argumentos de '{name}'")
+
+                expected_args=BUILTIN_ACTIONS[name]
+                if len(args)!= expected_args:
+                    raise CompileError(f"La acción '{name}' espera {expected_args} argumento(s), pero se le pasaron {len(args)}",line)
+
+                return ActionInst(name,args,line)
+
+            raise CompileError(f"Línea no válida o desconocida: '{token.value if token.value is not None else token.type.name}'",line)
+
+
+
+
     # Expresiones (tanda 2 Precedencia de menor a mayor)
     def parse_expression(self)-> Expression:
         """Punto de entrada para parsear cualquier expresion """
@@ -148,7 +246,7 @@ class Parser:
     def _parse_comparison(self)-> Expression:
         """Nivel 5: Comparaciones (<,<=,>,>=,==,!=)"""
         expr= self._parse_additive()
-
+                    
         while self._peek().type in (
             TokenType.LESS,
             TokenType.LESS_EQUAL,
