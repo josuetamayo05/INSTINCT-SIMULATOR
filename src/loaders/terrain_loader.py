@@ -13,3 +13,17 @@ def load_terrain(filepath:str)-> Terrain:
             parts=line.split()
             if len(parts) != 2:
                 raise CompileError(f"Línea inválida en terreno")
+            key, val=parts[0],parts[1]
+            if key=="terrain":
+                name=val
+            elif key=="char":
+                char=val
+            elif key=="resource_max":
+                resource_max=int(val)
+            elif key=="regen":
+                regen=int(val)
+
+    if not all([name,char,resource_max is not None, regen is not None]):
+        raise CompileError("Terreno incompleto",1)
+
+    return Terrain(name,char,resource_max, regen)
