@@ -23,7 +23,7 @@ class World:
         return 0<=x<self.width and 0<=y<self.height
 
     def get_cell(self,x:int,y:int)->Optional[Cell]:
-        if in_bounds(x,y):
+        if self.in_bounds(x,y):
             return self.grid[y][x]
         return None
 
