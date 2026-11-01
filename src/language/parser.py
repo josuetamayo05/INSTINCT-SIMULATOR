@@ -1,6 +1,6 @@
 from typing import List, Dict, Set, Optional
-from src.language.tokens import Token, TokenType
-from src.language.ast_nodes import (
+from language.tokens import Token, TokenType
+from language.ast_nodes import (
     CompiledProgram,
     Instruction,
     LabelInst,
@@ -16,8 +16,8 @@ from src.language.ast_nodes import (
     BinaryOp,
     FunctionCall,
 )
-from src.language.errors import CompileError
-from src.language.constants import (
+from language.errors import CompileError
+from language.constants import (
     READONLY_PERCEPTIONS,
     WORLD_CONSTANTS,
     BUILTIN_ACTIONS,

@@ -1,7 +1,7 @@
 from typing import List, Optional
-from src.world.creature import Creature
-from src.world.world_object import WorldObject
-from src.world.terrain import Terrain
+from world.creature import Creature
+from world.world_object import WorldObject
+from world.terrain import Terrain
 
 class Cell:
     def __init__(self, terrain: Terrain):
@@ -10,12 +10,12 @@ class Cell:
         self.creature: Optional[Creature] = []
 
     def is_walkable(self) -> bool:
-        return self.object is None and self.creature is None
+        return self.object is None and len(self.creature) == 0
 
     def has_object(self) -> bool:
         return self.object is not None
 
     def has_creature(self) -> bool:
-        return self.creature is not None
+        return len(self.creature) > 0
 
     

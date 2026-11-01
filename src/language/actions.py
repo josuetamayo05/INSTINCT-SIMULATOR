@@ -1,7 +1,7 @@
 from abc import ABC, abstractclassmethod
 from typing import List, Any
-from src.world.world import World
-from src.world.creature import Creature
+from world.world import World
+from world.creature import Creature
 
 class Action(ABC):
     consumes_turn:bool=True

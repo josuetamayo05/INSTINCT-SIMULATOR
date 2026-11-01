@@ -1,6 +1,6 @@
-from src.language.lexer import Lexer
-from src.language.parser import Parser
-from src.language.errors import CompileError
+from language.lexer import Lexer
+from language.parser import Parser
+from language.errors import CompileError
 
 
 # ==============================================================================
