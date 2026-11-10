@@ -43,7 +43,8 @@ class Parser:
         """Compila el archivo entero y devuelve un CompileProgram listo"""
         self._skip_newlines()
         self._parse_header()
-        
+        self._parse_body()
+        self._validate_semantics()
         return self.program
 
     # Punto de entrada
@@ -144,7 +145,7 @@ class Parser:
     # 2 CUERPO DE INSTRUCCIONES
     def _parse_body(self)->None:
         """Parsea todas las lineas a partir de start: hasta el EOF"""
-        if not self._is_start_label:
+        if not self._is_start_label():
             raise CompileError("El cuerpo debe comenzar con la etiqueta 'start'",self._peek().line)
 
         while not self._is_at_end():
@@ -152,7 +153,7 @@ class Parser:
             if self._is_at_end():
                 break
 
-            inst=self._parse_intruction_line()
+            inst=self._parse_instruction_line()
             if inst is not None:
                 self.program.instructions.append(inst)
 
@@ -356,8 +357,22 @@ class Parser:
 
         return args
 
-    # UTILIDADES DE NAVEGACION DE TOKENS
+    # VALIDACION SEMANTICA POST-PARSING
+    def _validate_semantics(self):
+        # 1. Comprobar que exista la etiqueta start:
+        if "start" not in self.program.labels:
+            CompileError("No se encontró la etiqueta obligatoria 'start:' en el cuerpo", 1)
 
+        # 2. Comprobar que todos los goto apunten a etiquetas existentes    
+        for inst in self.program.instructions:
+            if isinstance(inst, GotoInst):
+                if inst.target not in self.program.labels:
+                    raise CompileError(f"Salto 'goto {inst.target}' a una etiqueta inexistente", inst.line_number)
+            elif isinstance(inst, ConditionalGotoInst):
+                if inst.target not in self.program.labels:
+                    raise CompileError(f"Salto condicional 'goto {inst.target}' a una etiqueta inexistente", inst.line_number)
+
+    # UTILIDADES DE NAVEGACION DE TOKENS
     def _peek(self,offset:int=0)->Token:
         """Mira el token en la posicion actual + offset sin consumirlo"""
         pos=self.current+offset
@@ -413,3 +428,5 @@ class Parser:
             self._advance()
             return True
         return False
+
+

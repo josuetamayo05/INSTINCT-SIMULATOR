@@ -83,7 +83,7 @@ class LabelInst(Instruction):
 @dataclass
 class GotoInst(Instruction):
     """Salto incondicional (ej, 'goto start')"""
-    target=int
+    target:int
     line_number:int
 
     def __repr__(self)->str:

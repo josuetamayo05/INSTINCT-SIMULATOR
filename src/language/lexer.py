@@ -40,7 +40,7 @@ class Lexer:
             if self.tokens and self.tokens[-1].type != TokenType.NEWLINE:
                 self._add_token(TokenType.NEWLINE, "\n")
             self.line+=1
-            self.column+=1
+            self.column=1
             return
 
         # Comentarios (#) hasta el fin de la linea
@@ -84,7 +84,7 @@ class Lexer:
             if self._match('='):
                 self._add_token(TokenType.EQUAL_EQUAL)
             else:
-                self.add_token(TokenType.ASSIGN)
+                self._add_token(TokenType.ASSIGN)
         elif char =='!':
             if self._match('='):
                 self._add_token(TokenType.BANG_EQUAL)
