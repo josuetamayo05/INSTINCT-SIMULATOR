@@ -2,6 +2,7 @@ from abc import ABC, abstractclassmethod
 from typing import List, Any
 from src.world.world import World
 from src.world.creature import Creature
+from src.language.errors import InstinctRuntimeError
 
 class Action(ABC):
     consumes_turn:bool=True
@@ -19,7 +20,6 @@ class MoveAction(Action):
     def execute(self, creature, world, args):
         dx,dy,speed=int(args[0]),int(args[1]),int(args[2])
         if dx not in (-1,0,1) or dy not in (-1,0,1):
-            from src.language.errors import InstinctRuntimeError
             raise InstinctRuntimeError("dx y dy solo pueden ser (-1, 0, 1)",0)
         world.move_creature(creature, dx, dy, speed)
 
@@ -92,6 +92,47 @@ class SayAction(Action):
         text = str(args[0])
         # Registrar en los logs de la app
         world.add_event(f"💬 {creature.species} dice: \"{text}\"")
+
+
+# FUNCIONES AUXILIARES DE VALIDACION Y COMBATE 
+
+def _check_int(val: Any, name: str) -> int:
+    """Verificar que el argumento sea un entero """
+    if not isinstance(val,int) or isinstance(val,bool):
+        raise TypeError(f"El argumento '{name} debe ser un entero, no {type(val).__name__}'")
+    return val 
+
+def _check_direction(dx:int, dy:int)-> None:
+    if dx not in (-1, 0, 1) or dy not in (-1, 0, 1):
+        raise ValueError(f"Las direcciones dx y dy deben estar en {{-1, 0, 1}}, se obtuvo ({dx}, {dy})")
+
+def _strike(creature: Creature, world: World, dx:int, dy:int, damage: int)->None:
+    """
+    Lógica compartida para attack y consume
+    - Con (0, 0) ataca unicamente al terreno bajo la propia criatura
+    - Con (dx, dy) != (0, 0) golpea a la casilla adyacente. Si hay criatura pierde vida,
+      si hay objeto pierde reserva, y si solo hay terreno, este pierde reserva.
+    - Fuera del mapa: no hace nada
+    """
+    if dx==0 and dy==0:
+        cell=world.get_cell(creature.x,creature.y)
+        if cell:
+            cell.terrain.take_damage(damage)
+        return 
+
+    # Casillas adyacentes a distancia 1
+    target=world.get_target_cell(creature, dx, dy)
+    if target is None: 
+        return 
+
+    if target.creature:
+        target.creature.health -= damage
+        if target.creature.health <= 0:
+            world.remove_creature(target.creature)
+    elif target.object:
+        target.object.take_damage(damage)
+    else:
+        target.terrain.take_damage(damage)
 
 ACTION_REGISTRY={
     "wait": WaitAction(),
