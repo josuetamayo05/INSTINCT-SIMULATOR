@@ -3,6 +3,12 @@ from src.world.creature import Creature
 from src.world.cell import Cell
 from src.world.terrain import Terrain
 from src.world.world_object import WorldObject
+from dataclasses import dataclass
+
+@dataclass
+class EventLog:
+    tick: int
+    message: str
 
 class World:
     def __init__(self,width:int,height:int,default_terrain:Terrain):
@@ -12,12 +18,18 @@ class World:
         self.creatures:List[Creature]=[]
         self.tick_count=0
         self.roar_buffer:List[Tuple[int,int,str]]= []  # (x, y, message) del tick anterior
+        self.events: List[EventLog]=[]
 
         for i in range(height):
             row=[]
             for j in range(width):
                 row.append(Cell(default_terrain.copy()))
             self.grid.append(row)
+
+    def add_event(self, message:str)->None:
+        """Registrar un nuevo evento con el numero del tick"""
+        log= EventLog(self.tick_count, message)
+        self.events.append(log)
 
     def in_bounds(self,x:int,y:int)->bool:
         return 0<=x<self.width and 0<=y<self.height

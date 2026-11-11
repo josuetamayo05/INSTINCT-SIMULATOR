@@ -79,14 +79,19 @@ class ReproduceAction(Action):
         world.place_creature(baby, creature.x+dx,creature.y+dy)
 
 class RoarAction(Action):
-    def execute(self, creature, world, args):
+    def execute(self, creature, world, args: List[Any]):
         text=str(args[0])
+        # 1. Guardar para que otras criaturas lo escuchen  
         world.roar_buffer.append((creature.x,creature.y,text)) 
+        # 2. Registrar en los logs de la app
+        world.add_event(f"📢 {creature.species} RUGIÓ: \"{text}\"")
 
 class SayAction(Action):
     consumes_turn=False
-    def execute(self, creature, world, args):
-        pass 
+    def execute(self, creature, world, args: List[Any]):
+        text = str(args[0])
+        # Registrar en los logs de la app
+        world.add_event(f"💬 {creature.species} dice: \"{text}\"")
 
 ACTION_REGISTRY={
     "wait": WaitAction(),

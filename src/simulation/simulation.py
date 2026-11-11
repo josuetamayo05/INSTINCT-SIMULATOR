@@ -2,7 +2,7 @@ from typing import List
 from src.world.world import World
 from src.language.interpreter import Interpreter
 from src.world.creature import Creature
-
+from src.language.errors import InstinctRuntimeError
 class Simulation:
     def __init__(self, world: World, seed: int = 42):
         self.world = world
@@ -21,9 +21,9 @@ class Simulation:
                 continue
             try:
                 self.interpreter.run_turn(creature)
-            except Exception as e:
-                print(f"[ERROR] {creature.species} en ({creature.x},{creature.y}): {e}")
-                self.world.remove_creature
+            except InstinctRuntimeError as e:
+                self.world.events.append(f"[tick {self.world.tick_count}] {creature.species}: {e}")
+                self.world.remove_creature(creature)
 
         self.world.end_of_tick()
 

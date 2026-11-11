@@ -243,7 +243,7 @@ class ActionInst(Instruction):
             a.check(self.line_number)
 
     def execute(self, ctx):
-        action=ACTION_REGISTRY[self.action_name]
+        action=ACTION_REGISTRY[self.action_name] 
         args=[arg.evaluate(ctx) for arg in self.args]
         try:
             action.execute(ctx.creature, ctx.world, args)
@@ -252,7 +252,8 @@ class ActionInst(Instruction):
         except Exception as e:
             raise InstinctRuntimeError(str(e), ctx.line)
         ctx.ip += 1
-        ctx.turn_over = True
+        if action.consumes_turn:
+            ctx.turn_over = True
 
 
 #PROGRAMA COMPILADO COMPLETO    
