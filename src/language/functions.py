@@ -1,10 +1,13 @@
 from src.language.constants import WORLD_CONSTANTS
 from src.world.creature import Creature
+from src.world.world import World
 
-def _fn_see(self,creature:Creature,x:int,y:int)->int:
-        if self.world.chebyshev_distance(creature.x,creature.y,x,y)>creature.vision:
+
+def see(ctx,x:int,y:int)->int:
+        creature, world = ctx.creature, ctx.world
+        if world.chebyshev_distance(creature.x,creature.y,x,y)>creature.vision:
             return WORLD_CONSTANTS["NONE"]
-        cell=self.world.get_cell(x,y)
+        cell=world.get_cell(x,y)
         if cell is None:
             return WORLD_CONSTANTS["OBJECT"]
         if cell.creature: 
@@ -15,14 +18,18 @@ def _fn_see(self,creature:Creature,x:int,y:int)->int:
             return WORLD_CONSTANTS["OBJECT"]
         return WORLD_CONSTANTS["GROUND"]
 
-def _fn_name(self,creature:Creature,x:int,y:int)->str:
-    if self.world.chebyshev_distance(creature.x,creature.y,x,y)>creature.vision:
+def name(ctx,x:int,y:int)->str:
+    creature, world = ctx.creature, ctx.world
+    if world.chebyshev_distance(creature.x,creature.y,x,y)>creature.vision:
         return ""
-    cell=self.world.get_cell(x,y)
+    cell=world.get_cell(x,y)
     if cell is None:
-        return "UNKNOWN"
+        return ""
     if cell.creature: 
         return cell.creature.species
     if cell.object:
         return cell.object.name
     return cell.terrain.name
+
+FUNCTIONS= {"see": see, "name": name}
+

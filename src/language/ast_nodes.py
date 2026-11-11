@@ -9,6 +9,7 @@ from src.language.context import ExecutionContext
 from src.language.perceptions import get_perception
 from src.language.constants import OPERATIONS
 from src.language.actions import ACTION_REGISTRY
+from src.language.functions import FUNCTIONS
 
 def is_truthy(value:Any)->bool:
         if isinstance(value,int):
@@ -148,14 +149,14 @@ class FunctionCall(Expression):
             arg.check(line)
 
     def evaluate(self, ctx):
-        if self.name not in BUILTIN_FUNCTIONS:
-            raise InstinctRuntimeError(f"Función desconocida: '{self.name}'", ctx.line)
+        values=[]
         for arg in self.args:
             val=arg.evaluate(ctx)
             if not isinstance(val,int):
                 raise InstinctRuntimeError(f"Los argumentos deben ser enteros.")
+            values.append(val)
 
-        return FunctionCall(self.name,self.args)
+        return FUNCTIONS[self.name](ctx, *values)
 
 
 # INSTRUCCIONES (Realizan una accion o controlan el flujo)

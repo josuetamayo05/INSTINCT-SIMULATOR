@@ -8,6 +8,8 @@ world = World(10, 10, Terrain("Grass", ".", 100, 2))
 prog = load_creature("data/creatures/hobbit.ins")
 c = Creature("Hobbit", "shire", 60, 5, 300, program=prog)
 world.place_creature(c, 3, 3)
+other = Creature("Uruk", "mordor", 80, 5, 300, program=load_creature("data/creatures/uruk.ins"))
+world.place_creature(other, 5, 3)   # enemigo cerca: el hobbit debería huir (flee)
 interp = Interpreter(world, seed=1)
 for t in range(8):
     interp.run_turn(c)
