@@ -297,7 +297,7 @@ class Parser:
             expr= BinaryOp(op_map[op_token.type],expr,right)
 
         return expr
-
+    
     def _parse_unary(self)-> Expression:
         """Nivel 2: Menos unario (-) y Operador 'not'"""
         if self._peek().type in (TokenType.MINUS, TokenType.NOT):
@@ -361,16 +361,13 @@ class Parser:
     def _validate_semantics(self):
         # 1. Comprobar que exista la etiqueta start:
         if "start" not in self.program.labels:
-            CompileError("No se encontró la etiqueta obligatoria 'start:' en el cuerpo", 1)
+            raise CompileError("No se encontró la etiqueta obligatoria 'start:' en el cuerpo", 1)
 
         # 2. Comprobar que todos los goto apunten a etiquetas existentes    
         for inst in self.program.instructions:
-            if isinstance(inst, GotoInst):
-                if inst.target not in self.program.labels:
-                    raise CompileError(f"Salto 'goto {inst.target}' a una etiqueta inexistente", inst.line_number)
-            elif isinstance(inst, ConditionalGotoInst):
-                if inst.target not in self.program.labels:
-                    raise CompileError(f"Salto condicional 'goto {inst.target}' a una etiqueta inexistente", inst.line_number)
+            inst.check()
+
+
 
     # UTILIDADES DE NAVEGACION DE TOKENS
     def _peek(self,offset:int=0)->Token:
