@@ -1,7 +1,7 @@
 from typing import List
-from world.world import World
-from language.interpreter import Interpreter
-from world.creature import Creature
+from src.world.world import World
+from src.language.interpreter import Interpreter
+from src.world.creature import Creature
 
 class Simulation:
     def __init__(self, world: World, seed: int = 42):

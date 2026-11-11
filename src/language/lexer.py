@@ -1,6 +1,6 @@
 from typing import List, Any
-from .tokens import Token, TokenType, KEYWORDS
-from .errors import LexerError
+from src.language.tokens import Token, TokenType, KEYWORDS
+from src.language.errors import LexerError
 
 class Lexer:
     """Convierte codigo fuente de instinct en una lista de tokens"""

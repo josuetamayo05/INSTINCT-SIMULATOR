@@ -1,6 +1,6 @@
 from typing import Any
-from world.world import World
-from world.creature import Creature
+from src.world.world import World
+from src.world.creature import Creature
 import random as _random
 
 def _find_nearest(creature:Creature, world: World, filter_fn):

@@ -1,8 +1,8 @@
 from typing import List, Optional,Tuple
-from world.creature import Creature
-from world.cell import Cell
-from world.terrain import Terrain
-from world.world_object import WorldObject
+from src.world.creature import Creature
+from src.world.cell import Cell
+from src.world.terrain import Terrain
+from src.world.world_object import WorldObject
 
 class World:
     def __init__(self,width:int,height:int,default_terrain:Terrain):

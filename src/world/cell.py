@@ -1,7 +1,7 @@
 from typing import List, Optional
-from world.creature import Creature
-from world.world_object import WorldObject
-from world.terrain import Terrain
+from src.world.creature import Creature
+from src.world.world_object import WorldObject
+from src.world.terrain import Terrain
 
 class Cell:
     def __init__(self, terrain: Terrain):
