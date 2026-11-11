@@ -8,7 +8,7 @@ from src.language.errors import CompileError,InstinctRuntimeError
 from src.language.context import ExecutionContext
 from src.language.perceptions import get_perception
 from src.language.constants import OPERATIONS
-
+from src.language.actions import ACTION_REGISTRY
 
 def is_truthy(value:Any)->bool:
         if isinstance(value,int):
@@ -83,12 +83,13 @@ class UnaryOp(Expression):
         self.expr.check(line)
 
     def evaluate(self, ctx):
+        val=self.expr.evaluate(ctx)
         if self.op=="-":
-            if not isinstance(self.expr,int):
+            if not isinstance(val,int):
                 raise InstinctRuntimeError(f"Se esperaba un número para el operador '{self.op}'", ctx.line)
-            return -self.expr
+            return -val
         if self.op=="not":
-            return int(not is_truthy(self.expr.evaluate(ctx)))
+            return int(not is_truthy(val))
         
 
 @dataclass
@@ -150,7 +151,8 @@ class FunctionCall(Expression):
         if self.name not in BUILTIN_FUNCTIONS:
             raise InstinctRuntimeError(f"Función desconocida: '{self.name}'", ctx.line)
         for arg in self.args:
-            if not isinstance(arg,int):
+            val=arg.evaluate(ctx)
+            if not isinstance(val,int):
                 raise InstinctRuntimeError(f"Los argumentos deben ser enteros.")
 
         return FunctionCall(self.name,self.args)
@@ -172,14 +174,20 @@ class LabelInst(Instruction):
     def __repr__(self)->str:
         return f"Label({self.name}:)"
 
+    def execute(self, ctx):
+        ctx.ip+=1  
+
 @dataclass
 class GotoInst(Instruction):
     """Salto incondicional (ej, 'goto start')"""
-    target:int
+    target:str
     line_number:int
 
     def __repr__(self)->str:
         return f"Goto({self.target})"
+
+    def execute(self, ctx):
+        ctx.ip=ctx.program.labels[self.target]
 
 @dataclass
 class ConditionalGotoInst(Instruction):
@@ -194,6 +202,13 @@ class ConditionalGotoInst(Instruction):
     def check(self):
         self.condition.check(self.line_number)
 
+    def execute(self, ctx):
+        cond_value=self.condition.evaluate(ctx)
+        if is_truthy(cond_value):
+            ctx.ip=ctx.program.labels[self.target]
+        else:
+            ctx.ip+=1
+
 @dataclass
 class AssignmentInst(Instruction):
     """Asignacion de variable ej, ('home_x=x')"""
@@ -206,6 +221,12 @@ class AssignmentInst(Instruction):
 
     def check(self):
         self.value_expr.check(self.line_number)
+
+    def execute(self, ctx):
+        value=self.value_expr.evaluate(ctx)
+        ctx.creature.variables[self.variable_name]=value
+        ctx.ip+=1
+
 @dataclass
 class ActionInst(Instruction):
     """Llamada a accion ej ('move(1,0,2' o 'wait(1)'))"""
@@ -219,6 +240,18 @@ class ActionInst(Instruction):
     def check(self):
         for a in self.args:
             a.check(self.line_number)
+
+    def execute(self, ctx):
+        action=ACTION_REGISTRY[self.action_name]
+        args=[arg.evaluate(ctx) for arg in self.args]
+        try:
+            action.execute(ctx.creature, ctx.world, args)
+        except InstinctRuntimeError:
+            raise  
+        except Exception as e:
+            raise InstinctRuntimeError(str(e), ctx.line)
+        ctx.ip += 1
+        ctx.turn_over = True
 
 
 #PROGRAMA COMPILADO COMPLETO    
