@@ -17,7 +17,8 @@ class World:
         self.grid:List[List[Cell]]=[]
         self.creatures:List[Creature]=[]
         self.tick_count=0
-        self.roar_buffer:List[Tuple[int,int,str]]= []  # (x, y, message) del tick anterior
+        self.roar_buffer:List[Tuple[int,int,str]]= []  # Rugidos del tick anterior
+        self.pending_roars:List[Tuple[int,int,str]]=[] # Rugidos en este tick (para el proximo)
         self.events: List[EventLog]=[]
 
         for i in range(height):
@@ -84,6 +85,7 @@ class World:
             c.end_of_tick()
         for c in list(self.creatures):
             if c.is_dead() and c.alive:
+                self.add_event(f"💀 {c.species} en ({c.x},{c.y}) ha muerto")
                 self.remove_creature(c)
 
         # 3: Regenerar terrenos
@@ -95,6 +97,11 @@ class World:
         for row in self.grid:
             for cell in row:
                 if cell.object and cell.object.is_destroyed():
+                    self.add_event(f"💥 Objeto '{cell.obj.name}' destruido")
                     cell.object=None
+
+        # 5. Rotar BUFER DE RUGIDOS (lo emitido hoy se oye mañana)
+        self.roar_buffer=self.pending_roars
+        self.pending_roars=[]
 
         self.tick_count+=1

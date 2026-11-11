@@ -82,7 +82,7 @@ class RoarAction(Action):
     def execute(self, creature, world, args: List[Any]):
         text=str(args[0])
         # 1. Guardar para que otras criaturas lo escuchen  
-        world.roar_buffer.append((creature.x,creature.y,text)) 
+        world.pending_roars.append((creature.x,creature.y,text)) 
         # 2. Registrar en los logs de la app
         world.add_event(f"📢 {creature.species} RUGIÓ: \"{text}\"")
 

@@ -13,9 +13,6 @@ class Simulation:
         alive=self.world.alive_creatures()
         self.interpreter.rng.shuffle(alive)
 
-        # Limpiar buffer de rugidos del tick anterior
-        self.world.roar_buffer.clear()
-
         for creature in alive:
             if not creature.alive:
                 continue
