@@ -3,8 +3,19 @@ y la convertira en una estructura de objetos que el programa puede entener"""
 
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
-from src.language.constants import BUILTIN_FUNCTIONS
-from src.language.errors import CompileError
+from src.language.constants import BUILTIN_FUNCTIONS,WORLD_CONSTANTS
+from src.language.errors import CompileError,InstinctRuntimeError
+from src.language.context import ExecutionContext
+from src.language.perceptions import get_perception
+from src.language.constants import OPERATIONS
+
+
+def is_truthy(value:Any)->bool:
+        if isinstance(value,int):
+            return value!=0
+        if isinstance(value,str):
+            return value!=""
+        return bool(value)
 
 # Base
 class ASTNode:
@@ -18,12 +29,18 @@ class Expression(ASTNode):
         """Validacion en compilacion. Por defecto no hay q revisar."""
         pass
 
+    def evaluate(self, ctx:ExecutionContext):
+        raise NotImplementedError
+
 @dataclass
 class LiteralInt(Expression):
     value: int
 
     def __repr__(self)-> str:
         return f"LiteralInt({self.value})"
+
+    def evaluate(self, ctx):
+        return self.value
 
 @dataclass
 class LiteralString(Expression):
@@ -32,6 +49,9 @@ class LiteralString(Expression):
     def __repr__(self)->str:
         return f"LiteralString({repr(self.value)})"
 
+    def evaluate(self, ctx):
+        return self.value
+    
 @dataclass
 class VariableRef(Expression):
     """Representa el uso de una variable, percepcion o constante ej (health,x,NONE)"""
@@ -39,6 +59,16 @@ class VariableRef(Expression):
 
     def __repr__(self)->str:
         return f"VariableRef({self.name})"
+
+    def evaluate(self, ctx):
+        if self.name in WORLD_CONSTANTS:
+            return WORLD_CONSTANTS[self.name]
+        if self.name in ctx.creature.variables:
+            return ctx.creature.variables[self.name]
+        val=get_perception(self.name, ctx.creature, ctx.world, ctx.rng)
+        if val is not None:
+            return val
+        raise InstinctRuntimeError(f"Variable '{self.name}' no definida", ctx.line)
 
 @dataclass
 class UnaryOp(Expression):
@@ -51,6 +81,15 @@ class UnaryOp(Expression):
 
     def check(self, line):
         self.expr.check(line)
+
+    def evaluate(self, ctx):
+        if self.op=="-":
+            if not isinstance(self.expr,int):
+                raise InstinctRuntimeError(f"Se esperaba un número para el operador '{self.op}'", ctx.line)
+            return -self.expr
+        if self.op=="not":
+            return int(not is_truthy(self.expr.evaluate(ctx)))
+        
 
 @dataclass
 class BinaryOp(Expression):
@@ -65,7 +104,27 @@ class BinaryOp(Expression):
     def check(self, line):
         self.left.check(line)
         self.right.check(line)
-        
+
+    def evaluate(self, ctx):
+        left=self.left.evaluate(ctx)
+        right=self.right.evaluate(ctx)
+
+        if self.op == "and": return int(is_truthy(left) and is_truthy(right))
+        if self.op=="or": return int(is_truthy(left) or is_truthy(right))
+
+        if type(left) is not type(right):
+            raise InstinctRuntimeError(f"Operador '{self.op}': los dos lados deben tener el mismo tipo", ctx.line)
+
+        if self.op == "==": return int(left==right)
+        if self.op=="!=": return int(left!=right)
+
+        if not isinstance(left, int):
+            raise InstinctRuntimeError(f"Operador '{self.op}' requiere números", ctx.line)
+        if self.op in ("/","%") and right == 0:
+            raise InstinctRuntimeError("División por cero", ctx.line)
+        if self.op=="/": return left//right
+        if self.op=="%": return left % right
+        return OPERATIONS[self.op](left, right)
 
 @dataclass
 class FunctionCall(Expression):
@@ -86,6 +145,15 @@ class FunctionCall(Expression):
             f"pero se le pasaron {len(self.args)}", line)
         for arg in self.args:
             arg.check(line)
+
+    def evaluate(self, ctx):
+        if self.name not in BUILTIN_FUNCTIONS:
+            raise InstinctRuntimeError(f"Función desconocida: '{self.name}'", ctx.line)
+        for arg in self.args:
+            if not isinstance(arg,int):
+                raise InstinctRuntimeError(f"Los argumentos deben ser enteros.")
+
+        return FunctionCall(self.name,self.args)
 
 
 # INSTRUCCIONES (Realizan una accion o controlan el flujo)

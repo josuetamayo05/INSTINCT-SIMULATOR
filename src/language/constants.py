@@ -42,3 +42,10 @@ BUILTIN_FUNCTIONS= {
     "see": 2,       # see(x, y)
     "name": 2,      # name(x, y)
 }
+
+OPERATIONS = {
+    "+":  lambda a, b: a + b,   "-":  lambda a, b: a - b,
+    "*":  lambda a, b: a * b,
+    "<":  lambda a, b: int(a < b),  "<=": lambda a, b: int(a <= b),
+    ">":  lambda a, b: int(a > b),  ">=": lambda a, b: int(a >= b),
+}
