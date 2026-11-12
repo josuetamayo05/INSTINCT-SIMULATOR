@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any,Optional
 
+
 @dataclass
 class Creature:
     species:str
@@ -27,3 +28,7 @@ class Creature:
         self.age += 1
         if self.is_dead():
             self.alive = False
+    
+    @classmethod
+    def from_program(cls, program):
+        return cls(program.creature_name, program.faction, program.health, program.vision, program.lifespan, program=program)
