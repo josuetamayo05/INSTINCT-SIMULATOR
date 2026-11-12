@@ -29,9 +29,12 @@ def load_map(filepath:str, terrains: Dict[str,Terrain],objects:Dict[str,WorldObj
 
     for y, row in enumerate(grid_lines):
         for x, ch in enumerate(row):
+            if len(row) != width:
+                raise CompileError(f"La fila mide {len(row)} y debería medir {width}", y+2)
+            
             if ch in char_to_object:
                 cell=world.get_cell(x,y)
-                cell.object= char_to_object[ch].copy() if hasattr(char_to_object[ch], 'copy') else WorldObject(
+                cell.object= char_to_object[ch].copy() if char_to_object[ch].copy() else WorldObject(
                     char_to_object[ch].name, ch, char_to_object[ch].resource_max
                 )
 

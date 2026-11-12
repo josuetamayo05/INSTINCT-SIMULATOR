@@ -4,8 +4,8 @@ from dataclasses import dataclass
 class WorldObject:
     name:str
     char:str
-    resource_max:str
-    reserve:int
+    resource_max: int 
+    reserve:int = 0
 
     def __post_init__(self):
         self.reserve = self.resource_max
@@ -17,3 +17,6 @@ class WorldObject:
 
     def is_destroyed(self)->bool:
         return self.reserve <= 0
+
+    def copy(self):
+        return WorldObject(self.name, self.char, self.resource_max)
