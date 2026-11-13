@@ -19,7 +19,7 @@ class App(tk.Tk):
         self.status = tk.Label(bar, text="")
         self.status.pack(side="left", padx=10)
 
-        self.sim = Simulation(self._demo_world(), seed=1)
+        self.sim = None
         self.refresh()
 
     def _demo_world(self):
