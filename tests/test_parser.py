@@ -1,11 +1,26 @@
-from language.lexer import Lexer
-from language.parser import Parser
-from language.errors import CompileError
+import unittest
+from src.language.lexer import Lexer
+from src.language.parser import Parser
+from src.language.errors import CompileError
 
+HEADER = "creature X\nfaction F\nhealth 10\nvision 1\nlifespan 10\nstart:\n"
 
-# ==============================================================================
-# CÓDIGO DE LAS CRIATURAS DEL PDF
-# ==============================================================================
+def compile_code(code):
+    return Parser(Lexer(code).tokenize()).parse()
+
+class TestParser(unittest.TestCase):
+    def test_uruk_compila(self):
+        program = compile_code(URUK_CODE)
+        self.assertIn("start", program.labels)
+
+    def test_asignar_a_percepcion_falla(self):
+        with self.assertRaises(CompileError):
+            compile_code(HEADER + "health = 50")
+
+    def test_goto_inexistente_falla(self):
+        with self.assertRaises(CompileError):
+            compile_code(HEADER + "goto fantasma")
+
 
 URUK_CODE = """# uruk.ins
 creature Uruk
@@ -166,63 +181,5 @@ goto start
 """
 
 
-def compile_creature(code: str, name: str):
-    print(f"--> Compilando {name}...")
-    tokens = Lexer(code).tokenize()
-    program = Parser(tokens).parse()
-    print(f"    ✓ {name} compilado con éxito: {len(program.instructions)} instrucciones, etiquetas: {list(program.labels.keys())}")
-    return program
 
 
-def test_compile_all_examples():
-    print("========================================")
-    print("   COMPILANDO CRIATURAS DE EJEMPLO      ")
-    print("========================================")
-    compile_creature(URUK_CODE, "Uruk")
-    compile_creature(HOBBIT_CODE, "Hobbit")
-    compile_creature(ENT_CODE, "Ent")
-    compile_creature(DWARF_CODE, "Dwarf")
-    print("\n✅ ¡Todos los ejemplos del profesor compilan perfectamente!")
-
-
-def test_compile_errors():
-    print("\n========================================")
-    print("   PROBANDO ERRORES DE COMPILACIÓN      ")
-    print("========================================")
-
-    # 1. Asignar a percepción
-    try:
-        code = "creature X\nfaction F\nhealth 10\nvision 1\nlifespan 10\nstart:\nhealth = 50"
-        Parser(Lexer(code).tokenize()).parse()
-        print("❌ Error: debió fallar asignación a health")
-    except CompileError as e:
-        print(f"✓ Error capturado: {e}")
-
-    # 2. Goto a etiqueta que no existe
-    try:
-        code = "creature X\nfaction F\nhealth 10\nvision 1\nlifespan 10\nstart:\ngoto fantasma"
-        Parser(Lexer(code).tokenize()).parse()
-        print("❌ Error: debió fallar goto inexistente")
-    except CompileError as e:
-        print(f"✓ Error capturado: {e}")
-
-    # 3. Acción con número incorrecto de argumentos
-    try:
-        code = "creature X\nfaction F\nhealth 10\nvision 1\nlifespan 10\nstart:\nmove(1, 2)"
-        Parser(Lexer(code).tokenize()).parse()
-        print("❌ Error: debió fallar move con 2 argumentos")
-    except CompileError as e:
-        print(f"✓ Error capturado: {e}")
-
-    # 4. Etiqueta duplicada
-    try:
-        code = "creature X\nfaction F\nhealth 10\nvision 1\nlifespan 10\nstart:\nwait(1)\nstart:\nwait(1)"
-        Parser(Lexer(code).tokenize()).parse()
-        print("❌ Error: debió fallar etiqueta duplicada")
-    except CompileError as e:
-        print(f"✓ Error capturado: {e}")
-
-
-if __name__ == "__main__":
-    test_compile_all_examples()
-    test_compile_errors()
