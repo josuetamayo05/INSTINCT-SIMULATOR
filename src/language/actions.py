@@ -13,26 +13,28 @@ class Action(ABC):
 
 class WaitAction(Action):
     def execute(self, creature, world, args):
-        n=max(1,int(args[0]))
+        num=_check_int(args[0])
+        n=max(1,num)
         creature.wait_remaining=n-1 # -1 porque este turno ya cuenta
 
 class MoveAction(Action):
     def execute(self, creature, world, args):
-        dx,dy,speed=int(args[0]),int(args[1]),int(args[2])
+        
+        dx,dy,speed=_check_int(args[0]),_check_int(args[1]),_check_int(args[2])
         if dx not in (-1,0,1) or dy not in (-1,0,1):
             raise InstinctRuntimeError("dx y dy solo pueden ser (-1, 0, 1)",0)
         world.move_creature(creature, dx, dy, speed)
 
 class AttackAction(Action):
     def execute(self, creature, world, args):
-        dx,dy,damage=int(args[0]),int(args[1]),int(args[2])
+        dx,dy,damage=_check_int(args[0]),_check_int(args[1]),_check_int(args[2])
         if dx not in (-1,0,1) or dy not in (-1,0,1):
             return
         _strike(creature, world, dx,dy,damage)
 
 class ConsumeAction(Action):
     def execute(self, creature, world, args):
-        dx,dy,damage,heal=int(args[0]),int(args[1]),int(args[2]),int(args[3])
+        dx,dy,damage,heal=_check_int(args[0]),_check_int(args[1]),_check_int(args[2]),_check_int(args[3])
         if dx not in (-1,0,1) or dy not in (-1,0,1):
             return 
         _strike(creature, world, dx, dy, damage)
@@ -40,7 +42,7 @@ class ConsumeAction(Action):
 
 class ReproduceAction(Action):
     def execute(self, creature, world, args):
-        dx, dy, health_cost=int(args[0]),int(args[1]),int(args[2])
+        dx, dy, health_cost=_check_int(args[0]),_check_int(args[1]),_check_int(args[2])
         if dx not in (-1,0,1) or dy not in (-1,0,1):
             return
         if creature.health <= health_cost:
