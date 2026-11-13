@@ -184,44 +184,85 @@ class TestInterprete(unittest.TestCase):
 
 
 class TestSimulacion(unittest.TestCase):
+    """Simulation trabaja sobre una copia del mundo: se comprueba sim.world."""
+
+    def start(self, world, seed=1):
+        return Simulation(world, seed=seed)
+
     def test_error_de_ejecucion_mata_y_queda_en_el_log(self):
         world = make_world()
-        c = make_creature(world, 5, 5, program=compile_body('wait("hola")'))
-        Simulation(world, seed=1).tick()
-        self.assertFalse(c.alive)
-        self.assertTrue(world.events)
+        make_creature(world, 5, 5, program=compile_body('wait("hola")'))
+        sim = self.start(world)
+        sim.tick()
+        self.assertTrue(sim.is_over)
+        self.assertTrue(sim.events_since(0))
 
     def test_fin_de_tick_resta_vida_y_suma_edad(self):
         world = make_world()
-        c = make_creature(world, 5, 5, program=compile_body("wait(1)"))
-        Simulation(world, seed=1).tick()
+        make_creature(world, 5, 5, program=compile_body("wait(1)"))
+        sim = self.start(world)
+        sim.tick()
+        c = sim.world.creatures[0]
         self.assertEqual((c.health, c.age), (49, 1))
-        self.assertEqual(world.tick_count, 1)
+        self.assertEqual(sim.tick_count, 1)
 
     def test_rugido_se_oye_en_el_tick_siguiente(self):
         world = make_world()
         make_creature(world, 5, 5, program=compile_body('roar("hey")'))
-        listener = make_creature(world, 6, 6, program=compile_body("wait(1)"))
-        sim = Simulation(world, seed=1)
+        make_creature(world, 6, 6, program=compile_body("wait(1)"))
+        sim = self.start(world)
         sim.tick()
-        self.assertEqual(perceive("last_roar", listener, world), "hey")
+        listener = sim.world.get_cell(6, 6).creature
+        self.assertEqual(perceive("last_roar", listener, sim.world), "hey")
 
     def test_objeto_destruido_desaparece(self):
         world = make_world()
         make_creature(world, 5, 5, program=compile_body("attack(1, 0, 100)"))
         world.get_cell(6, 5).object = WorldObject("Rock", "#", 100)
-        Simulation(world, seed=1).tick()
-        self.assertIsNone(world.get_cell(6, 5).object)
+        sim = self.start(world)
+        sim.tick()
+        self.assertIsNone(sim.world.get_cell(6, 5).object)
 
     def test_muchos_ticks_sin_errores(self):
         world = make_world(20, 20)
         program = compile_body("move(random % 3 - 1, random % 3 - 1, 1)")
         for i in range(5):
             make_creature(world, i, 0, program=program)
-        sim = Simulation(world, seed=42)
+        sim = self.start(world, seed=42)
         for _ in range(50):
             sim.tick()
-        self.assertEqual(world.tick_count, 50)
+        self.assertEqual(sim.tick_count, 50)
+
+    def test_reset_vuelve_al_estado_inicial(self):
+        world = make_world()
+        make_creature(world, 5, 5, program=compile_body("move(1, 0, 1)"))
+        sim = self.start(world)
+        sim.tick(); sim.tick()
+        sim.reset()
+        self.assertEqual(sim.tick_count, 0)
+        self.assertEqual(sim.world.creatures[0].x, 5)
+        self.assertEqual(world.creatures[0].x, 5)   # el de preparacion no se toco
+
+    def test_misma_semilla_misma_partida(self):
+        world = make_world(20, 20)
+        program = compile_body("move(random % 3 - 1, random % 3 - 1, 1)")
+        make_creature(world, 10, 10, program=program)
+        sim = self.start(world, seed=7)
+        for _ in range(20):
+            sim.tick()
+        first = (sim.world.creatures[0].x, sim.world.creatures[0].y)
+        sim.reset()
+        for _ in range(20):
+            sim.tick()
+        self.assertEqual((sim.world.creatures[0].x, sim.world.creatures[0].y), first)
+
+    def test_simulacion_no_toca_el_mundo_de_preparacion(self):
+        world = make_world()
+        make_creature(world, 5, 5, program=compile_body("move(1, 0, 1)"))
+        sim = self.start(world)
+        sim.tick()
+        self.assertEqual(world.creatures[0].x, 5)
+        self.assertEqual(world.tick_count, 0)
 
 
 if __name__ == "__main__":

@@ -15,17 +15,14 @@ def render(world):
     return "\n".join(out)
 
 cat = Catalog(); cat.load_all()
-for i in cat.issues: print(f"[LOAD] {i.file}:{i.line} {i.message}")
+for i in cat.issues:
+    print(f"[LOAD] {i.file}:{i.line} {i.message}")
 
+setup = copy.deepcopy(cat.maps["Plain with rocks"])
+setup.place_creature(Creature.from_program(cat.species["Hobbit"]), 2, 2)
+setup.place_creature(Creature.from_program(cat.species["Uruk"]), 12, 4)
 
-world = copy.deepcopy(cat.maps["Plain with rocks"])
-world.place_creature(Creature.from_program(cat.species["Hobbit"]), 2, 2)
-world.place_creature(Creature.from_program(cat.species["Uruk"]), 12, 4)
-sim = Simulation(world, seed=1)
-for t in range(10):
+sim = Simulation(setup, seed=1)
+for _ in range(10):
     sim.tick()
-    print(f"--- tick {t} ---\n{render(world)}")
-    
-name = "Plain with rocks"
-if name not in cat.maps:
-    raise SystemExit(f"El mapa '{name}' no se cargó. Revisa los errores de arriba.")
+    print(f"--- tick {sim.tick_count} ---\n{render(sim.world)}")
