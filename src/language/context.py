@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class ExecutionContext:
@@ -7,7 +7,9 @@ class ExecutionContext:
     world: "World"
     rng: "random.Random"
     program: "CompiledProgram"
+    perceptions: dict = field(default_factory=dict)
     ip: int=0
     line:int=0
     lines_executed:int=0
     turn_over: bool = False
+    

@@ -18,11 +18,11 @@ from src.language.ast_nodes import (
 )
 from src.language.errors import CompileError
 from src.language.constants import (
-    READONLY_PERCEPTIONS,
     WORLD_CONSTANTS,
     BUILTIN_ACTIONS,
     BUILTIN_FUNCTIONS,
 )
+from src.language.perceptions import READONLY_PERCEPTIONS
 
 REQUIRED_HEADER_KEYS = {"creature", "faction", "health", "vision", "lifespan"}
 

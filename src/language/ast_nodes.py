@@ -6,7 +6,6 @@ from typing import List, Dict, Any
 from src.language.constants import BUILTIN_FUNCTIONS,WORLD_CONSTANTS
 from src.language.errors import CompileError,InstinctRuntimeError
 from src.language.context import ExecutionContext
-from src.language.perceptions import get_perception
 from src.language.constants import OPERATIONS
 from src.language.actions import ACTION_REGISTRY
 from src.language.functions import FUNCTIONS
@@ -66,9 +65,8 @@ class VariableRef(Expression):
             return WORLD_CONSTANTS[self.name]
         if self.name in ctx.creature.variables:
             return ctx.creature.variables[self.name]
-        val=get_perception(self.name, ctx.creature, ctx.world, ctx.rng)
-        if val is not None:
-            return val
+        if self.name in ctx.perceptions:
+            return ctx.perceptions[self.name]
         raise InstinctRuntimeError(f"Variable '{self.name}' no definida", ctx.line)
 
 @dataclass

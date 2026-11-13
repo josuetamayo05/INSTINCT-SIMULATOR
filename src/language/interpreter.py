@@ -1,4 +1,5 @@
 import random as _random_mod
+from src.language.perceptions import snapshot
 from src.world.world import World
 from src.world.creature import Creature
 from src.language.context import ExecutionContext
@@ -15,8 +16,9 @@ class Interpreter:
             creature.wait_remaining-=1
             return
         program = creature.program
-        ctx=ExecutionContext(creature, self.world, self.rng, program,
-                            ip=creature.instruction_pointer)
+        ctx=ExecutionContext(creature, self.world, self.rng, program, ip=creature.instruction_pointer)
+
+        ctx.perceptions= snapshot(creature,self.world,self.rng)
 
         while not ctx.turn_over and ctx.lines_executed<100 and creature.alive:
             if ctx.ip>=len(program.instructions):

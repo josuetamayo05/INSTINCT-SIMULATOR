@@ -10,23 +10,6 @@ WORLD_CONSTANTS = {
     "ENEMY": 3,
 }
 
-# Percepciones de solo lectura
-READONLY_PERCEPTIONS= {
-    # Propias
-    "health", "age", "lifespan", "vision", "species", "faction",
-    "x", "y", "terrain_here", "reserve_here",
-    # Del mundo
-    "width", "height", "tick",
-    "total_creatures", "total_allies", "total_enemies",
-    "random",
-    # del entorno cercano
-    "allies_near", "enemies_near", "objects_near",
-    "enemy_dist", "enemy_dx", "enemy_dy",
-    "ally_dist", "ally_dx", "ally_dy",
-    "object_dist", "object_dx", "object_dy",
-    "roars_near", "last_roar",
-}
-
 # Acciones base obligatorias y su cantidad exacta de argumentos
 BUILTIN_ACTIONS = {
     "wait": 1,      # wait(n)
