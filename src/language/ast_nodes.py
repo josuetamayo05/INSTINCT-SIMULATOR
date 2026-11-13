@@ -161,7 +161,7 @@ class FunctionCall(Expression):
 class Instruction(ASTNode):
     """Clase abstracta para todas las instruccuones de cuerpo"""
     line_number:int
-    def check(self)-> None:
+    def check(self, labels)-> None:
         pass
 
 @dataclass
@@ -176,6 +176,7 @@ class LabelInst(Instruction):
     def execute(self, ctx):
         ctx.ip+=1  
 
+
 @dataclass
 class GotoInst(Instruction):
     """Salto incondicional (ej, 'goto start')"""
@@ -188,6 +189,10 @@ class GotoInst(Instruction):
     def execute(self, ctx):
         ctx.ip=ctx.program.labels[self.target]
 
+    def check(self, labels):
+        if not self.target in labels:
+            raise CompileError(f"Etiqueta '{self.target}' no existe", self.line_number) 
+
 @dataclass
 class ConditionalGotoInst(Instruction):
     """Salto condicional (ej, 'if health < 20 goto flee')"""
@@ -198,7 +203,9 @@ class ConditionalGotoInst(Instruction):
     def __repr__(self)->str:
         return f"IfGoto({self.condition} -> {self.target})"
 
-    def check(self):
+    def check(self, labels):
+        if not self.target in labels:
+            raise CompileError(f"Etiqueta '{self.target}' no existe", self.line_number)
         self.condition.check(self.line_number)
 
     def execute(self, ctx):
