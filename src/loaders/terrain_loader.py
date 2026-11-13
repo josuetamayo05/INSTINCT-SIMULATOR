@@ -12,7 +12,7 @@ def load_terrain(filepath:str)-> Terrain:
                 continue
             parts=line.split()
             if len(parts) != 2:
-                raise CompileError(f"Línea inválida en terreno")
+                raise CompileError(f"Línea inválida en terreno",line)
             key, val=parts[0],parts[1]
             if key=="terrain":
                 name=val
