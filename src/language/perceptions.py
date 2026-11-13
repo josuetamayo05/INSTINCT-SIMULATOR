@@ -48,7 +48,7 @@ def _count_creatures(creature:Creature, world:World, filter_fn, only_visible:boo
     for c in world.alive_creatures():
         if c is creature or not filter_fn(c,creature):
             continue
-        if only_visible and world.chebyshev_distance(creature.x, creature.y, c.x, c.y):
+        if only_visible and world.chebyshev_distance(creature.x, creature.y, c.x, c.y)>creature.vision:
             continue
         count+=1
     return count

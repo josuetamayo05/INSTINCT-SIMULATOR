@@ -1,185 +1,93 @@
+import os
 import unittest
 from src.language.lexer import Lexer
 from src.language.parser import Parser
 from src.language.errors import CompileError
+from src.loaders.creature_loader import load_creature
 
 HEADER = "creature X\nfaction F\nhealth 10\nvision 1\nlifespan 10\nstart:\n"
+CREATURES_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "creatures")
+
 
 def compile_code(code):
     return Parser(Lexer(code).tokenize()).parse()
 
-class TestParser(unittest.TestCase):
-    def test_uruk_compila(self):
-        program = compile_code(URUK_CODE)
+
+class TestEjemplosDelPDF(unittest.TestCase):
+    """Las cuatro criaturas de data/creatures deben compilar."""
+
+    def check_example(self, filename, name):
+        program = load_creature(os.path.join(CREATURES_DIR, filename))
+        self.assertEqual(program.creature_name, name)
         self.assertIn("start", program.labels)
+        self.assertGreater(len(program.instructions), 0)
 
-    def test_asignar_a_percepcion_falla(self):
+    def test_uruk(self):
+        self.check_example("uruk.ins", "Uruk")
+
+    def test_hobbit(self):
+        self.check_example("hobbit.ins", "Hobbit")
+
+    def test_ent(self):
+        self.check_example("ent.ins", "Ent")
+
+    def test_dwarf(self):
+        self.check_example("dwarf.ins", "Dwarf")
+
+
+class TestCabecera(unittest.TestCase):
+    def test_cabecera_se_lee(self):
+        program = compile_code(HEADER + "wait(1)")
+        self.assertEqual(
+            (program.creature_name, program.faction, program.health,
+             program.vision, program.lifespan),
+            ("X", "F", 10, 1, 10))
+
+    def test_falta_start(self):
         with self.assertRaises(CompileError):
-            compile_code(HEADER + "health = 50")
+            compile_code("creature X\nfaction F\nhealth 10\nvision 1\nlifespan 10\nwait(1)")
 
-    def test_goto_inexistente_falla(self):
+
+class TestErroresDeCompilacion(unittest.TestCase):
+    def assertCompileError(self, body):
         with self.assertRaises(CompileError):
-            compile_code(HEADER + "goto fantasma")
+            compile_code(HEADER + body)
+
+    def test_asignar_a_percepcion(self):
+        self.assertCompileError("health = 50")
+
+    def test_asignar_a_constante(self):
+        self.assertCompileError("GROUND = 5")
+
+    def test_goto_inexistente(self):
+        self.assertCompileError("goto fantasma")
+
+    def test_if_goto_inexistente(self):
+        self.assertCompileError("if health > 0 goto fantasma")
+
+    def test_numero_de_argumentos(self):
+        self.assertCompileError("move(1, 2)")
+
+    def test_etiqueta_duplicada(self):
+        self.assertCompileError("wait(1)\nstart:\nwait(1)")
+
+    def test_error_indica_la_linea(self):
+        with self.assertRaises(CompileError) as ctx:
+            compile_code(HEADER + "wait(1)\ngoto fantasma")
+        self.assertEqual(ctx.exception.line, 8)
 
 
-URUK_CODE = """# uruk.ins
-creature Uruk
-faction isengard
-health 80
-vision 6
-lifespan 400
+class TestProgramasValidos(unittest.TestCase):
+    def test_etiqueta_registrada(self):
+        program = compile_code(HEADER + "wait(1)\nflee:\nwait(2)")
+        self.assertIn("flee", program.labels)
 
-start:
-if health < 20 goto flee
-if enemy_dist == 1 goto bite
-if enemy_dist > 0 goto hunt
-if health > 70 and allies_near < 2 goto breed
-if allies_near > 3 goto celebrate
+    def test_goto_a_etiqueta_posterior(self):
+        compile_code(HEADER + "goto later\nlater:\nwait(1)")
 
-wander:
-move(random % 3 - 1, random % 3 - 1, 1)
-goto start
-
-bite:
-consume(enemy_dx, enemy_dy, 15, 15)
-goto start
-
-hunt:
-move(enemy_dx, enemy_dy, 2)
-goto start
-
-flee:
-move(-enemy_dx, -enemy_dy, 3)
-goto start
-
-breed:
-if see(x, y + 1) != GROUND goto wander
-reproduce(0, 1, 30)
-goto start
-
-celebrate:
-say("meat is back on the menu")
-roar("we are the fighting Uruk-hai")
-goto start
-"""
-
-HOBBIT_CODE = """# hobbit.ins
-creature Hobbit
-faction shire
-health 60
-vision 5
-lifespan 300
-
-start:
-if enemy_dist >= 0 goto flee
-if health > 45 and total_allies < 20 goto breed
-if reserve_here > 0 and health < 80 goto second_breakfast
-if ally_dist > 1 goto go_ally
-wait(1)
-goto start
-
-flee:
-say("they are taking us to Isengard")
-move(-enemy_dx, -enemy_dy, 2)
-goto start
-
-second_breakfast:
-consume(0, 0, 10, 10)
-goto start
-
-go_ally:
-move(ally_dx, ally_dy, 1)
-goto start
-
-breed:
-if see(x + 1, y) == GROUND goto breed_right
-if see(x - 1, y) == GROUND goto breed_left
-wait(1)
-goto start
-
-breed_right:
-reproduce(1, 0, 20)
-goto start
-
-breed_left:
-reproduce(-1, 0, 20)
-goto start
-"""
-
-ENT_CODE = """# ent.ins
-creature Ent
-faction fangorn
-health 150
-vision 4
-lifespan 1000
-
-start:
-home_x = x
-home_y = y
-
-watch:
-if enemy_dist == 1 goto hit
-if enemies_near > 0 and roars_near == 0 goto warn
-if x != home_x or y != home_y goto go_home
-if health < 150 goto roots
-wait(1)
-goto watch
-
-hit:
-attack(enemy_dx, enemy_dy, 12)
-goto watch
-
-warn:
-roar("hoom, hom, do not be hasty")
-goto watch
-
-roots:
-consume(0, 0, 3, 3)
-goto watch
-
-go_home:
-dx = (home_x > x) - (home_x < x)
-dy = (home_y > y) - (home_y < y)
-move(dx, dy, 1)
-goto watch
-"""
-
-DWARF_CODE = """# dwarf.ins
-creature Dwarf
-faction erebor
-health 100
-vision 3
-lifespan 600
-
-start:
-if last_roar == "khazad ai-menu" goto rescue
-if object_dist == 1 and health < 100 goto mine
-dx = random % 3 - 1
-dy = random % 3 - 1
-steps = 0
-
-walk:
-if steps >= 5 goto start
-if enemy_dist == 1 goto shout
-move(dx, dy, 1)
-steps = steps + 1
-goto walk
-
-mine:
-if name(x + object_dx, y + object_dy) != "Rock" goto start
-consume(object_dx, object_dy, 20, 20)
-goto start
-
-shout:
-roar("khazad ai-menu")
-goto start
-
-rescue:
-say("and my axe")
-move(ally_dx, ally_dy, 2)
-goto start
-"""
+    def test_variables_propias(self):
+        compile_code(HEADER + "home_x = x\nmove(home_x - x, 0, 1)")
 
 
-
-
+if __name__ == "__main__":
+    unittest.main()

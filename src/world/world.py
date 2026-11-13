@@ -97,7 +97,7 @@ class World:
         for row in self.grid:
             for cell in row:
                 if cell.object and cell.object.is_destroyed():
-                    self.add_event(f"💥 Objeto '{cell.obj.name}' destruido")
+                    self.add_event(f"💥 Objeto '{cell.object.name}' destruido")
                     cell.object=None
 
         # 5. Rotar BUFER DE RUGIDOS (lo emitido hoy se oye mañana)
