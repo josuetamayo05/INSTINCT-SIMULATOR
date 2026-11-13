@@ -28,33 +28,14 @@ class AttackAction(Action):
         dx,dy,damage=int(args[0]),int(args[1]),int(args[2])
         if dx not in (-1,0,1) or dy not in (-1,0,1):
             return
-        target=world.get_target_cell(creature,dx,dy)
-        if target is None:
-            return
-        if target.creature:
-            target.creature.health-=damage
-            if target.creature.health<=0:
-                world.remove_creature(target.creature)
-        elif target.object:
-            target.object.take_damage(damage)
-        else:
-            target.terrain.take_damage(damage)
+        _strike(creature, world, dx,dy,damage)
 
 class ConsumeAction(Action):
     def execute(self, creature, world, args):
         dx,dy,damage,heal=int(args[0]),int(args[1]),int(args[2]),int(args[3])
         if dx not in (-1,0,1) or dy not in (-1,0,1):
             return 
-        target=world.get_target_cell(creature, dx, dy)
-        if target is None: return
-        if target.creature:
-            target.creature.health-=damage
-            if target.creature.health<=0:
-                world.remove_creature(target.creature)
-        elif target.object:
-            target.object.take_damage(damage)
-        else:
-            target.terrain.take_damage(damage)
+        _strike(creature, world, dx, dy, damage)
         creature.health+=heal
 
 class ReproduceAction(Action):

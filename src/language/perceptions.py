@@ -118,13 +118,13 @@ def get_perception(name:str, creature: Creature, world:World, rng)->Any:
         for rx, ry, _ in world.roar_buffer:
             if world.chebyshev_distance(creature.x,creature.y,rx,ry)<=creature.vision:
                 count+=1
-            return count
+        return count
 
     if name=="last_roar":
         for rx, ry, text in reversed(world.roar_buffer):
             if world.chebyshev_distance(creature.x,creature.y,rx,ry)<=creature.vision:
                 return text
-            return ""
+        return ""
 
     return None
 
