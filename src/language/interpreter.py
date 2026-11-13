@@ -1,17 +1,4 @@
-from typing import Any, List
 import random as _random_mod
-
-from src.language.ast_nodes import (
-    CompiledProgram, Expression, Instruction,
-    LiteralInt, LiteralString, VariableRef,
-    UnaryOp, BinaryOp, FunctionCall,
-    LabelInst, GotoInst, ConditionalGotoInst,
-    AssignmentInst, ActionInst,
-)
-from src.language.actions import ACTION_REGISTRY
-from src.language.perceptions import get_perception
-from src.language.constants import WORLD_CONSTANTS, READONLY_PERCEPTIONS
-from src.language.errors import InstinctRuntimeError
 from src.world.world import World
 from src.world.creature import Creature
 from src.language.context import ExecutionContext

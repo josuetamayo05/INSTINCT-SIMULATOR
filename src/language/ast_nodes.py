@@ -2,7 +2,7 @@
 y la convertira en una estructura de objetos que el programa puede entener"""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from src.language.constants import BUILTIN_FUNCTIONS,WORLD_CONSTANTS
 from src.language.errors import CompileError,InstinctRuntimeError
 from src.language.context import ExecutionContext

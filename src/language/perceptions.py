@@ -1,7 +1,41 @@
-vscode_lsp_terminal_prompt_tracker= {}
+from abc import ABC, abstractmethod
 from src.world.world import World
 from src.world.creature import Creature
 import random as _random
+from typing import Any
+
+class Perception(ABC):
+    @abstractmethod
+    def read(self, creature, world, rng):
+        pass
+
+class CreatureAttr(Perception):
+    def __init__(self,health:int):
+        self.health=health
+    def read(self, creature, world, rng):
+        return super().read(creature, world, rng)
+
+class WorldAttr(Perception):
+    def __init__(self):
+        super().__init__()
+    def read(self, creature, world, rng):
+        return super().read(creature, world, rng)
+
+class Count(Perception):
+    def __init__(self, filter_fn, extent):
+        self.filter_fn=filter_fn
+        self.extent=extent
+        
+    def read(self, creature, world, rng):
+        return super().read(creature, world, rng)
+
+class Nearest(Perception):
+    def __init__(self, search_engine, component):
+        self.search_engine=search_engine
+        self.component=component
+        
+    def read(self, creature, world, rng):
+        return super().read(creature, world, rng)
 
 def _find_nearest(creature:Creature, world: World, filter_fn):
     best_dist=float("inf")
