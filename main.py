@@ -1,4 +1,4 @@
-vscode_lsp_terminal_prompt_tracker= {}
+import copy
 from src.loaders.catalog import Catalog
 from src.simulation.simulation import Simulation
 from src.world.creature import Creature

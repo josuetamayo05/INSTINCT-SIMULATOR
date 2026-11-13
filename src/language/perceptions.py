@@ -1,4 +1,4 @@
-from typing import Any
+vscode_lsp_terminal_prompt_tracker= {}
 from src.world.world import World
 from src.world.creature import Creature
 import random as _random
@@ -46,6 +46,14 @@ def _count_near(creature:Creature, world: World, filter_fn)->int:
             count+=1
     return count
 
+def _count_map(creature: Creature, world: World, filter_fn):
+    count = 0
+    for c in world.alive_creatures():
+        if c is creature: continue
+        if filter_fn(c,creature):
+            count+=1
+    return count 
+
 def _count_objects_near(creature:Creature, world:World)->int:
     count=0
     for y in range(world.height):
@@ -86,9 +94,9 @@ def get_perception(name:str, creature: Creature, world:World, rng)->Any:
     if name == "total_creatures":
         return len(world.alive_creatures()) - 1
     if name == "total_allies":
-        return _count_near(creature, world, lambda c, me: c.faction == me.faction)
+        return _count_map(creature, world, lambda c, me: c.faction == me.faction)
     if name == "total_enemies":
-        return _count_near(creature, world, lambda c, me: c.faction != me.faction)
+        return _count_map(creature, world, lambda c, me: c.faction != me.faction)
     if name == "random":
         return rng.randint(0, 99)
     if name == "allies_near":

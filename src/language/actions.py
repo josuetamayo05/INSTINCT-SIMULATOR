@@ -79,10 +79,10 @@ class SayAction(Action):
 
 # FUNCIONES AUXILIARES DE VALIDACION Y COMBATE 
 
-def _check_int(val: Any, name: str) -> int:
+def _check_int(val: Any) -> int:
     """Verificar que el argumento sea un entero """
     if not isinstance(val,int) or isinstance(val,bool):
-        raise TypeError(f"El argumento '{name} debe ser un entero, no {type(val).__name__}'")
+        raise TypeError(f"El argumento '{val}' debe ser un entero, no '{type(val).__name__}'")
     return val 
 
 def _check_direction(dx:int, dy:int)-> None:
