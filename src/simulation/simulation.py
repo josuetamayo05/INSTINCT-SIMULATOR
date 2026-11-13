@@ -19,7 +19,7 @@ class Simulation:
             try:
                 self.interpreter.run_turn(creature)
             except InstinctRuntimeError as e:
-                self.world.add_event(f"[tick {self.world.tick_count}] {creature.species}: {e}")
+                self.world.add_event(f"{creature.species}: {e}")
                 self.world.remove_creature(creature)
 
         self.world.end_of_tick()

@@ -365,7 +365,7 @@ class Parser:
 
         # 2. Comprobar que todos los goto apunten a etiquetas existentes    
         for inst in self.program.instructions:
-            inst.check()
+            inst.check(self.program.labels)
 
 
 

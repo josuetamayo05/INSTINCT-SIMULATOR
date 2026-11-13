@@ -225,7 +225,7 @@ class AssignmentInst(Instruction):
     def __repr__(self)->str:
         return f"Action({self.variable_name} = {self.value_expr})"
 
-    def check(self):
+    def check(self, labels):
         self.value_expr.check(self.line_number)
 
     def execute(self, ctx):
@@ -243,7 +243,7 @@ class ActionInst(Instruction):
     def __repr__(self)->str:
         return f"Action({self.action_name}, {self.args})"
 
-    def check(self):
+    def check(self, labels):
         for a in self.args:
             a.check(self.line_number)
 
