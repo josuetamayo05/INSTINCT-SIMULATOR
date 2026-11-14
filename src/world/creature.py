@@ -25,8 +25,7 @@ class Creature(Entity):
     def end_of_tick(self):
         self.health -= 1
         self.age += 1
-        if self.is_dead():
-            self.alive = False
+        
 
     def take_damage(self, amount: int) -> int:
         self.health -= amount

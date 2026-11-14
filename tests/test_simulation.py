@@ -226,6 +226,24 @@ class TestSimulacion(unittest.TestCase):
         self.assertEqual((c.health, c.age), (49, 1))
         self.assertEqual(sim.tick_count, 1)
 
+    def test_muerte_al_final_del_tick_libera_la_casilla(self):
+        # PDF 3.4: con vida <= 0 "muere y desaparece del mapa"
+        world = make_world()
+        make_creature(world, 5, 5, health=1, program=compile_body("wait(1)"))
+        sim = self.start(world)
+        sim.tick()
+        self.assertIsNone(sim.world.get_cell(5, 5).creature)
+        self.assertEqual(sim.world.creatures, [])
+        self.assertTrue(any("muerto" in e.message for e in sim.events_since(0)))
+
+    def test_muerte_por_edad(self):
+        world = make_world()
+        c = make_creature(world, 5, 5, program=compile_body("wait(1)"))
+        c.lifespan = 1
+        sim = self.start(world)
+        sim.tick()
+        self.assertIsNone(sim.world.get_cell(5, 5).creature)
+
     def test_rugido_se_oye_en_el_tick_siguiente(self):
         world = make_world()
         make_creature(world, 5, 5, program=compile_body('roar("hey")'))
