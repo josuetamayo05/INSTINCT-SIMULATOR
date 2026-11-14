@@ -44,6 +44,8 @@ class App(tk.Tk):
         self.status.pack(fill="x", pady=(6, 6))
         self.log_panel = LogPanel(right)
         self.log_panel.pack(fill="both", expand=True)
+        self.log_panel.append([f"[carga] {i.file}:{i.line} {i.message}" for i in catalog.issues]
+                      or ["[carga] Todo se cargó sin errores."])
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -95,7 +97,7 @@ class App(tk.Tk):
             return
         self.sim = Simulation(self.setup_world, seed=1)
         self._events_shown = 0
-        self.log_panel.clear()
+        self.log_panel.append(["── Nueva simulación ──"])
         self.setup_panel.pack_forget()
         self.run_panel.pack(fill="both", expand=True)
         self.refresh()
@@ -128,24 +130,23 @@ class App(tk.Tk):
             self._after_id = None
         self.refresh()
 
-    def step(self)-> None:
+    def step(self) -> None:
         self.pause()
-        self.sim.reset()
-        self._events_shown = 0
-        self.log_panel.clear()
+        if not self.sim.is_over:
+            self.sim.tick()
         self.refresh()
+
 
     def reset(self) -> None:
         self.pause()
         self.sim.reset()
         self._events_shown = 0 
-        self.log_panel.clear()
+        self.log_panel.append(["── Nueva simulación ──"])
         self.refresh()
 
     def back_to_setup(self) -> None:
         self.pause()
         self.sim = None
-        self.log_panel.clear()
         self.run_panel.pack_forget()
         self.setup_panel.pack(fill="both", expand=True)
         self.refresh()

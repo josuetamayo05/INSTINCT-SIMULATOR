@@ -10,6 +10,7 @@ from src.language.actions import ACTION_REGISTRY
 from src.language.perceptions import PERCEPTIONS
 from src.language.interpreter import Interpreter
 from src.simulation.simulation import Simulation
+from src.language.errors import InstinctRuntimeError
 
 
 def make_world(width=10, height=10):
@@ -162,9 +163,28 @@ class TestInterprete(unittest.TestCase):
         Interpreter(world, seed=1).run_turn(c)
         return c
 
-    def test_random_es_igual_durante_el_turno(self):
-        c = self.run_one_turn("a = random\nb = random\nwait(1)")
-        self.assertEqual(c.variables["a"], c.variables["b"])
+    def test_random_cambia_en_cada_lectura(self):
+        # PDF 2.6: "distinto cada vez que se lee"
+        c = self.run_one_turn("a = random\nb = random\nc = random\nwait(1)")
+        values = {c.variables["a"], c.variables["b"], c.variables["c"]}
+        self.assertGreater(len(values), 1)
+
+    def test_resto_de_percepciones_fijas_en_el_turno(self):
+        # health se lee al inicio del turno: consume no la cambia hasta el siguiente
+        c = self.run_one_turn('h = health\nsay("x")\nconsume(0, 0, 1, 10)')
+        self.assertEqual(c.variables["h"], 50)
+
+    def test_dx_fuera_de_rango_es_error_con_su_linea(self):
+        # PDF 2.8: dx o dy fuera de {-1, 0, 1} es error de ejecucion
+        for action in ("attack(2, 0, 5)", "consume(0, 5, 1, 1)",
+                       "reproduce(3, 0, 1)", "move(2, 0, 1)"):
+            world = make_world()
+            c = make_creature(world, 5, 5, program=compile_body("wait(1)\n" + action))
+            interp = Interpreter(world, seed=1)
+            interp.run_turn(c)
+            with self.assertRaises(InstinctRuntimeError) as ctx:
+                interp.run_turn(c)
+            self.assertEqual(ctx.exception.line, 8, action)
 
     def test_el_turno_acaba_en_la_primera_accion(self):
         c = self.run_one_turn("move(1, 0, 1)\nmove(1, 0, 1)")

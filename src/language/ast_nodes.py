@@ -9,6 +9,7 @@ from src.language.context import ExecutionContext
 from src.language.constants import OPERATIONS
 from src.language.actions import ACTION_REGISTRY
 from src.language.functions import FUNCTIONS
+from src.language.perceptions import PERCEPTIONS
 
 def is_truthy(value:Any)->bool:
         if isinstance(value,int):
@@ -67,6 +68,8 @@ class VariableRef(Expression):
             return ctx.creature.variables[self.name]
         if self.name in ctx.perceptions:
             return ctx.perceptions[self.name]
+        if self.name in PERCEPTIONS:
+            return PERCEPTIONS[self.name].read(ctx.creature, ctx.world, ctx.rng)
         raise InstinctRuntimeError(f"Variable '{self.name}' no definida", ctx.line)
 
 @dataclass

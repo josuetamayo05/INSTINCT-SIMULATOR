@@ -21,30 +21,27 @@ class MoveAction(Action):
     def execute(self, creature, world, args):
         
         dx,dy,speed=_check_int(args[0]),_check_int(args[1]),_check_int(args[2])
-        if dx not in (-1,0,1) or dy not in (-1,0,1):
-            raise InstinctRuntimeError("dx y dy solo pueden ser (-1, 0, 1)",0)
+        _check_direction(dx, dy)
         world.move_creature(creature, dx, dy, speed)
 
 class AttackAction(Action):
     def execute(self, creature, world, args):
         dx,dy,damage=_check_int(args[0]),_check_int(args[1]),_check_int(args[2])
-        if dx not in (-1,0,1) or dy not in (-1,0,1):
-            return
+        _check_direction(dx, dy)
+
         _strike(creature, world, dx,dy,damage)
 
 class ConsumeAction(Action):
     def execute(self, creature, world, args):
         dx,dy,damage,heal=_check_int(args[0]),_check_int(args[1]),_check_int(args[2]),_check_int(args[3])
-        if dx not in (-1,0,1) or dy not in (-1,0,1):
-            return 
+        _check_direction(dx, dy)
         _strike(creature, world, dx, dy, damage)
         creature.health+=heal
 
 class ReproduceAction(Action):
     def execute(self, creature, world, args):
         dx, dy, health_cost=_check_int(args[0]),_check_int(args[1]),_check_int(args[2])
-        if dx not in (-1,0,1) or dy not in (-1,0,1):
-            return
+        _check_direction(dx, dy)
         if creature.health <= health_cost:
             return
         target=world.get_target_cell(creature, dx, dy)
@@ -87,7 +84,7 @@ def _check_int(val: Any) -> int:
 
 def _check_direction(dx:int, dy:int)-> None:
     if dx not in (-1, 0, 1) or dy not in (-1, 0, 1):
-        raise ValueError(f"Las direcciones dx y dy deben estar en {{-1, 0, 1}}, se obtuvo ({dx}, {dy})")
+        raise InstinctRuntimeError(f"Las direcciones dx y dy deben estar en {{-1, 0, 1}}, se obtuvo ({dx}, {dy})")
 
 def _strike(creature: Creature, world: World, dx:int, dy:int, damage: int)->None:
     """

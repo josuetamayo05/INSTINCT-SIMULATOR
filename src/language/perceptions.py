@@ -67,6 +67,7 @@ def _other_faction(c, me):
 def _anyone(c, me): return True
 
 class Perception(ABC):
+    live = False
     @abstractmethod
     def read(self, creature, world, rng) -> Any:
         """Calcula el valor de la percepcion para esta criatura ahora """
@@ -120,6 +121,7 @@ class ObjectsNear(Perception):
         return count
 
 class RandomNumber(Perception):
+    live = True
     def read(self, creature, world, rng):
         return rng.randint(0, 99)
 
@@ -172,4 +174,4 @@ READONLY_PERCEPTIONS = frozenset(PERCEPTIONS)
 
 def snapshot(creature, world, rng ) -> dict:
     """Values of all collections at the start of the shift"""
-    return {name: p.read(creature,world,rng) for name, p in PERCEPTIONS.items()}
+    return {name: p.read(creature,world,rng) for name, p in PERCEPTIONS.items() if not p.live}
