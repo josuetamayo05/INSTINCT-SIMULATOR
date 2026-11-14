@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any,Optional
-
+from src.world.entity import Entity
 
 @dataclass
-class Creature:
+class Creature(Entity):
     species:str
     faction:str
     health:int
@@ -12,7 +12,6 @@ class Creature:
     age:int=0
     x:int=0
     y:int=0
-    age:int=0
     alive:bool=True
     variables: Dict[str, Any]=field(default_factory=dict)
     program:Any=None    # Programa de comportamiento del criatura
@@ -28,6 +27,13 @@ class Creature:
         self.age += 1
         if self.is_dead():
             self.alive = False
+
+    def take_damage(self, amount: int) -> int:
+        self.health -= amount
+        return amount
+
+    def is_depleted(self):
+        return self.health<=0
     
     @classmethod
     def from_program(cls, program):

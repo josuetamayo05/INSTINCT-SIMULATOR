@@ -18,4 +18,8 @@ class Cell:
     def has_creature(self) -> bool:
         return self.creature is not None
 
+    def top(self):
+        """Lo que recibe un golpe, la criatura, si no el objeto, si no el terreno"""
+        return self.creature or self.object or self.terrain
+
     
