@@ -10,6 +10,8 @@ class App(tk.Tk):
     def __init__(self, catalog):
         super().__init__()
         self.title("Instinct Simulator")
+        self.geometry("1100x720")
+        self.minsize(800, 520)
         self.catalog = catalog
         self.setup_world = None   # el mundo que se edita en la preparación
         self.sim = None           # None = fase de preparación
@@ -35,15 +37,15 @@ class App(tk.Tk):
         # Columna derecha: mapa, estado y registro
         right = tk.Frame(self)
         right.pack(side="left", fill="both", expand=True, padx=(0, 10), pady=10)
-        self.map_view = MapView(right, cell_size=32)
-        self.map_view.pack()
+        self.map_view = MapView(right)
+        self.map_view.pack(fill="both", expand=True)
         self.map_view.bind("<Button-1>", self.on_left_click)
         for button in ("<Button-2>", "<Button-3>", "<Control-Button-1>"):
             self.map_view.bind(button, self.on_right_click)   # clic derecho 
         self.status = tk.Label(right, text="", anchor="w")
         self.status.pack(fill="x", pady=(6, 6))
         self.log_panel = LogPanel(right)
-        self.log_panel.pack(fill="both", expand=True)
+        self.log_panel.pack(fill="x")
         self.log_panel.append([f"[carga] {i.file}:{i.line} {i.message}" for i in catalog.issues]
                       or ["[carga] Todo se cargó sin errores."])
 
@@ -68,6 +70,9 @@ class App(tk.Tk):
         if self.sim is not None or self.setup_world is None:
             return
         x, y = self.map_view.cell_at(event.x, event.y)
+        if not self.setup_world.in_bounds(x, y):
+            return
+
         species = self.setup_panel.selected_species
         creature = Creature.from_program(self.catalog.species[species])
         if self.setup_world.place_creature(creature, x, y):
