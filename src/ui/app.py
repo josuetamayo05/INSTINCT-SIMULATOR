@@ -4,7 +4,8 @@ from src.simulation.simulation import Simulation
 from src.world.creature import Creature
 from src.ui.map_view import MapView
 from src.ui.setup_panel import SetupPanel
-
+from src.ui.run_panel import RunPanel
+from src.ui.log_panel import LogPanel
 class App(tk.Tk):
     def __init__(self, catalog):
         super().__init__()
@@ -12,13 +13,26 @@ class App(tk.Tk):
         self.catalog = catalog
         self.setup_world = None   # el mundo que se edita en la preparación
         self.sim = None           # None = fase de preparación
+        self.running= False       # Esta en play?  
+        self._after_id = None     # temporizador pendiente de tkinter
+        self._events_shown = 0    # cuantos eventos ya estan en el registro
 
-        self.setup_panel = SetupPanel(self, catalog,
+        # Columna izquierda: se muestra un panel u otro segun la fase
+        self.side = tk.Frame(self)
+        self.side.pack(side="left", fill="y", padx=10, pady=10)
+        self.setup_panel = SetupPanel(self.side, catalog,
                                       on_map_selected=self.select_map,
                                       on_clear=self.clear_creatures,
                                       on_start=self.start)
-        self.setup_panel.pack(side="left", fill="y", padx=10, pady=10)
+        self.run_panel = RunPanel(self.side,
+                                  on_play_pause=self.toggle_play,
+                                  on_step=self.step,
+                                  on_reset=self.reset,
+                                  on_edit=self.back_to_setup)
+        
+        self.setup_panel.pack(fill="both", expand=True)
 
+        # Columna derecha: mapa, estado y registro
         right = tk.Frame(self)
         right.pack(side="left", fill="both", expand=True, padx=(0, 10), pady=10)
         self.map_view = MapView(right, cell_size=32)
@@ -26,13 +40,12 @@ class App(tk.Tk):
         self.map_view.bind("<Button-1>", self.on_left_click)
         for button in ("<Button-2>", "<Button-3>", "<Control-Button-1>"):
             self.map_view.bind(button, self.on_right_click)   # clic derecho 
+        self.status = tk.Label(right, text="", anchor="w")
+        self.status.pack(fill="x", pady=(6, 6))
+        self.log_panel = LogPanel(right)
+        self.log_panel.pack(fill="both", expand=True)
 
-        bar = tk.Frame(right)
-        bar.pack(fill="x", pady=(10, 0))
-        self.tick_button = tk.Button(bar, text="Un tick", command=self.on_tick, state="disabled")
-        self.tick_button.pack(side="left")
-        self.status = tk.Label(bar, text="", anchor="w")
-        self.status.pack(side="left", padx=10)
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         if catalog.maps:
             first = sorted(catalog.maps)[0]
@@ -81,14 +94,65 @@ class App(tk.Tk):
             self.show_message("Coloca al menos una criatura antes de empezar.")
             return
         self.sim = Simulation(self.setup_world, seed=1)
-        self.tick_button.config(state="normal")
+        self._events_shown = 0
+        self.log_panel.clear()
+        self.setup_panel.pack_forget()
+        self.run_panel.pack(fill="both", expand=True)
         self.refresh()
 
     # Fase de ejecución 
 
-    def on_tick(self) -> None:
+    def toggle_play(self)-> None:
+        if self.running:
+            self.pause()
+        else:
+            self.running= True
+            self._loop()
+
+    def _loop(self) -> None:
+        """Un tick y se vuelve a programar. Tkinter lo llama cada delay_ms"""
+        self._after_id= None
+        if not self.running:
+            return
         self.sim.tick()
+        if self.sim.is_over:
+            self.running = False
+        else:
+            self._after_id= self.after(self.run_panel.delay_ms, self._loop)
         self.refresh()
+
+    def pause(self)-> None:
+        self.running = False
+        if self._after_id is not None:
+            self.after_cancel(self._after_id)
+            self._after_id = None
+        self.refresh()
+
+    def step(self)-> None:
+        self.pause()
+        self.sim.reset()
+        self._events_shown = 0
+        self.log_panel.clear()
+        self.refresh()
+
+    def reset(self) -> None:
+        self.pause()
+        self.sim.reset()
+        self._events_shown = 0 
+        self.log_panel.clear()
+        self.refresh()
+
+    def back_to_setup(self) -> None:
+        self.pause()
+        self.sim = None
+        self.log_panel.clear()
+        self.run_panel.pack_forget()
+        self.setup_panel.pack(fill="both", expand=True)
+        self.refresh()
+
+    def on_close(self)-> None:
+        self.pause()
+        self.destroy()
 
     # Dibujo
 
@@ -99,10 +163,16 @@ class App(tk.Tk):
             return
         self.map_view.draw(world)
         alive = len(world.alive_creatures())
-        if self.sim:
-            self.show_message(f"Tick {self.sim.tick_count} · {alive} vivas")
-        else:
+        if not self.sim:
             self.show_message(f"Preparación · {alive} criaturas colocadas")
+            return
+        new_events = self.sim.events_since(self._events_shown)
+        self._events_shown += len(new_events)
+        self.log_panel.append([f"[{e.tick}] {e.message}" for e in new_events])
+        self.run_panel.show_state(self.running, self.sim.is_over)
+        state = "Terminada" if self.sim.is_over else ("En marcha" if self.running else "En pausa")
+        self.show_message(f"Tick {self.sim.tick_count} · {alive} vivas · {state}")
+
 
     def show_message(self, text: str) -> None:
         self.status.config(text=text)
