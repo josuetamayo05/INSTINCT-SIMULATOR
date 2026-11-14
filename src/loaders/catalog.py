@@ -49,6 +49,8 @@ class Catalog:
                 self.issues.append(LoadIssue(path, e.line, e.message))
             except (OSError, UnicodeDecodeError) as e:
                 self.issues.append(LoadIssue(path, 0, f"No se pudo leer el archivo: {e}"))
+            except Exception as e:
+                self.issues.append(LoadIssue(path, 0, f"Error inesperado al cargar: {e}"))
 
     def _register(self, table, name, item, path, char=None):
         if name in table:
