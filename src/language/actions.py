@@ -96,23 +96,16 @@ def _strike(creature: Creature, world: World, dx:int, dy:int, damage: int)->None
     """
     if dx==0 and dy==0:
         cell=world.get_cell(creature.x,creature.y)
-        if cell:
-            cell.terrain.take_damage(damage)
-        return 
-
-    # Casillas adyacentes a distancia 1
-    target=world.get_target_cell(creature, dx, dy)
-    if target is None: 
-        return 
-
-    if target.creature:
-        target.creature.health -= damage
-        if target.creature.health <= 0:
-            world.remove_creature(target.creature)
-    elif target.object:
-        target.object.take_damage(damage)
+        target = cell.terrain 
     else:
-        target.terrain.take_damage(damage)
+        # Casillas adyacentes a distancia 1
+        cell=world.get_target_cell(creature, dx, dy)
+        if cell is None: 
+            return 
+        target = cell.top()
+    target.take_damage(damage) # polimorfismo
+    if target is cell.creature and target.is_depleted():
+        world.remove_creature(target)
 
 ACTION_REGISTRY={
     "wait": WaitAction(),

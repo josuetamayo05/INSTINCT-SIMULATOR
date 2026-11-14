@@ -96,7 +96,7 @@ class World:
         # 4: Objetos destruidos
         for row in self.grid:
             for cell in row:
-                if cell.object and cell.object.is_destroyed():
+                if cell.object and cell.object.is_depleted():
                     self.add_event(f"💥 Objeto '{cell.object.name}' destruido")
                     cell.object=None
 
